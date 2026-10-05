@@ -1,0 +1,13 @@
+# credenciais (conn_string com usuário/senha do banco)
+config.ini
+config.ini.tmp
+
+# dados locais do agente (decisões do analista, logs)
+avaliacoes.db
+avaliacoes.db-journal
+agente.log
+
+# python
+__pycache__/
+*.pyc
+.venv/

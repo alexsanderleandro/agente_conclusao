@@ -1,0 +1,6 @@
+anthropic
+pyodbc
+streamlit
+pandas
+striprtf
+openai
