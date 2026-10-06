@@ -1155,3 +1155,267 @@ KeyError: 'OPENAI_API_KEY'
 2026-10-05 16:24:47,531 INFO HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
 2026-10-05 16:24:47,554 INFO Atend 1-1578957-0 -> concluir=True conf=0.95 cqs=55
 2026-10-05 16:24:47,623 INFO Ciclo ok: 20 avaliados, 0 erros, 60566/2832 tokens
+2026-10-06 11:48:46,978 INFO 152 candidatos encontrados
+2026-10-06 11:48:46,981 INFO 35 tipos de CQS carregados
+2026-10-06 11:48:51,790 INFO HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-06 11:48:51,858 INFO Atend 1-2415105-0 -> concluir=True conf=0.90 cqs=55
+2026-10-06 11:48:54,385 INFO HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-06 11:48:54,438 INFO Atend 1-5910151-0 -> concluir=True conf=0.90 cqs=55
+2026-10-06 11:48:59,466 INFO HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-06 11:48:59,534 INFO Atend 1-5910573-0 -> concluir=True conf=0.90 cqs=54
+2026-10-06 11:49:04,218 INFO HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-06 11:49:04,274 INFO Atend 1-1578973-0 -> concluir=True conf=1.00 cqs=55
+2026-10-06 11:49:06,720 INFO HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-06 11:49:06,746 INFO Atend 1-1579067-0 -> concluir=True conf=0.90 cqs=55
+2026-10-06 11:49:08,866 INFO HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-06 11:49:08,897 INFO Atend 1-1579082-0 -> concluir=True conf=0.95 cqs=55
+2026-10-06 11:49:11,337 INFO HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-06 11:49:11,387 INFO Atend 1-1579093-0 -> concluir=True conf=0.95 cqs=63
+2026-10-06 11:49:13,198 INFO HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-06 11:49:13,216 INFO Atend 1-1579097-0 -> concluir=True conf=0.90 cqs=60
+2026-10-06 11:49:16,245 INFO HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-06 11:49:16,304 INFO Atend 1-1579099-0 -> concluir=True conf=0.95 cqs=55
+2026-10-06 11:49:20,246 INFO HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-06 11:49:20,290 INFO Atend 1-1579128-0 -> concluir=True conf=0.90 cqs=55
+2026-10-06 11:49:22,743 INFO HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-06 11:49:22,770 INFO Atend 1-1579131-0 -> concluir=True conf=0.90 cqs=54
+2026-10-06 11:49:26,007 INFO HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-06 11:49:26,060 INFO Atend 1-1579132-0 -> concluir=True conf=0.90 cqs=54
+2026-10-06 11:49:28,295 INFO HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-06 11:49:28,349 INFO Atend 1-1579133-0 -> concluir=True conf=0.90 cqs=55
+2026-10-06 11:49:30,385 INFO HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-06 11:49:30,441 INFO Atend 1-1565882-0 -> concluir=True conf=0.90 cqs=55
+2026-10-06 11:49:32,251 INFO HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-06 11:49:32,315 INFO Atend 1-1565925-0 -> concluir=True conf=1.00 cqs=55
+2026-10-06 11:49:34,473 INFO HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-06 11:49:34,505 INFO Atend 1-1565939-0 -> concluir=True conf=0.90 cqs=55
+2026-10-06 11:49:37,361 INFO HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-06 11:49:37,404 INFO Atend 1-1566007-0 -> concluir=True conf=1.00 cqs=54
+2026-10-06 11:49:39,252 INFO HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-06 11:49:39,313 INFO Atend 1-1566043-0 -> concluir=True conf=0.90 cqs=54
+2026-10-06 11:49:41,182 INFO HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-06 11:49:41,239 INFO Atend 1-1566045-0 -> concluir=True conf=0.95 cqs=55
+2026-10-06 11:49:43,987 INFO HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-06 11:49:44,010 INFO Atend 1-1566047-0 -> concluir=True conf=0.90 cqs=54
+2026-10-06 11:49:44,073 INFO Ciclo ok: 20 avaliados, 0 erros, 55102/2614 tokens
+2026-10-06 15:51:19,110 INFO 41 candidatos encontrados
+2026-10-06 15:51:19,113 INFO 35 tipos de CQS carregados
+2026-10-06 15:51:19,185 WARNING Áudios desativados (faster-whisper indisponível): No module named 'faster_whisper'
+2026-10-06 15:51:19,190 WARNING OCR desativado (Tesseract/pytesseract indisponível): No module named 'pytesseract'
+2026-10-06 15:51:22,957 INFO HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-06 15:51:23,017 INFO Atend 1-5910473-0 -> concluir=False conf=0.90 cqs=- imagens_ocr=0
+2026-10-06 15:51:23,186 INFO Atend 1-5910493-0: pasta do cliente não encontrada (sem link nas iterações e nome 'Empilhatec - Matriz' não bate com nenhuma pasta; use [pastas_clientes])
+2026-10-06 15:51:26,162 INFO HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-06 15:51:26,180 INFO Atend 1-5910493-0 -> concluir=True conf=0.90 cqs=54 imagens_ocr=0
+2026-10-06 15:51:27,183 INFO Atend 1-5910620-0: pasta do cliente não encontrada (sem link nas iterações e nome 'Napoli Peças' não bate com nenhuma pasta; use [pastas_clientes])
+2026-10-06 15:51:28,612 INFO Atend 1-361861-0: pasta do cliente não encontrada (sem link nas iterações e nome 'Aguca Gosto Alimentos' não bate com nenhuma pasta; use [pastas_clientes])
+2026-10-06 15:51:31,463 INFO HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-06 15:51:31,475 INFO Atend 1-361861-0 -> concluir=True conf=0.90 cqs=54 imagens_ocr=0
+2026-10-06 15:51:31,795 INFO Atend 1-1566047-0: pasta do cliente não encontrada (sem link nas iterações e nome 'Guidauto Peças - Matriz' não bate com nenhuma pasta; use [pastas_clientes])
+2026-10-06 15:51:33,741 INFO HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-06 15:51:33,802 INFO Atend 1-1566050-0 -> concluir=True conf=0.90 cqs=54 imagens_ocr=0
+2026-10-06 15:51:35,453 INFO HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-06 15:51:35,468 INFO Atend 1-1566055-0 -> concluir=True conf=0.90 cqs=54 imagens_ocr=0
+2026-10-06 15:51:38,357 INFO HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-06 15:51:38,385 INFO Atend 1-1566093-0 -> concluir=True conf=0.95 cqs=55 imagens_ocr=0
+2026-10-06 15:51:38,424 INFO Atend 1-1584135-0: pasta do cliente não encontrada (sem link nas iterações e nome 'Pescados Serra e Mar - Unidade BH' não bate com nenhuma pasta; use [pastas_clientes])
+2026-10-06 15:51:40,270 INFO HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-06 15:51:40,297 INFO Atend 1-1584135-0 -> concluir=True conf=0.95 cqs=55 imagens_ocr=0
+2026-10-06 15:51:44,610 INFO HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-06 15:51:44,652 INFO Atend 1-1584251-0 -> concluir=False conf=0.90 cqs=- imagens_ocr=0
+2026-10-06 15:51:44,698 INFO Atend 1-1584394-0: pasta do cliente não encontrada (sem link nas iterações e nome 'Pescados Serra e Mar - Unidade BH' não bate com nenhuma pasta; use [pastas_clientes])
+2026-10-06 15:51:44,865 ERROR Erro no atendimento 1-1584394-0: 'utf-8' codec can't encode characters in position 14712-14713: surrogates not allowed
+Traceback (most recent call last):
+  File "C:\Users\alex\Documents\Python\agente_conclusao\agente.py", line 493, in ciclo
+    res, i, o = avaliar(client, cfg, at, historico, catalogo, exemplos, prot,
+                ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                        "\n".join(fichas_txt), "\n".join(audios_txt))
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\alex\Documents\Python\agente_conclusao\agente.py", line 345, in avaliar
+    texto, tin, tout = llm.chamar(cfg["agente"]["provider"], client, cfg["agente"]["modelo"],
+                       ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                                  system, user, max_tok)
+                                  ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\alex\Documents\Python\agente_conclusao\llm.py", line 29, in chamar
+    r = client.chat.completions.create(
+        model=modelo, max_completion_tokens=max_tokens,
+        messages=[{"role": "system", "content": system}, {"role": "user", "content": user}], **kw)
+  File "C:\Users\alex\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\openai\_utils\_utils.py", line 298, in wrapper
+    return func(*args, **kwargs)
+  File "C:\Users\alex\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\openai\resources\chat\completions\completions.py", line 1318, in create
+    return self._post(
+           ~~~~~~~~~~^
+        "/chat/completions",
+        ^^^^^^^^^^^^^^^^^^^^
+    ...<53 lines>...
+        stream_cls=Stream[ChatCompletionChunk],
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\alex\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\openai\_base_client.py", line 1440, in post
+    return cast(ResponseT, self.request(cast_to, opts, stream=stream, stream_cls=stream_cls))
+                           ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\alex\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\openai\_base_client.py", line 1129, in request
+    request = self._build_request(options, retries_taken=retries_taken)
+  File "C:\Users\alex\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\openai\_base_client.py", line 653, in _build_request
+    kwargs["content"] = openapi_dumps(json_data) if is_given(json_data) and json_data is not None else None
+                        ~~~~~~~~~~~~~^^^^^^^^^^^
+  File "C:\Users\alex\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\openai\_utils\_json.py", line 25, in openapi_dumps
+    ).encode()
+      ~~~~~~^^
+UnicodeEncodeError: 'utf-8' codec can't encode characters in position 14712-14713: surrogates not allowed
+2026-10-06 15:51:46,279 WARNING Ficha M:\MinasFreios\FichaVisita\Ficha de Visita - MinasFreios - 23-09-2026  - Assinada.pdf ilegível: No module named 'pypdfium2'
+2026-10-06 15:51:48,506 INFO HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-06 15:51:48,521 INFO Atend 1-1584396-0 -> concluir=True conf=1.00 cqs=60 imagens_ocr=0
+2026-10-06 15:51:48,522 INFO Atend 1-1584396-0: 1 ficha(s) de visita lida(s)
+2026-10-06 15:51:48,601 INFO Atend 1-1584412-0: pasta do cliente não encontrada (sem link nas iterações e nome 'Pescados Serra e Mar - Unidade BH' não bate com nenhuma pasta; use [pastas_clientes])
+2026-10-06 15:51:50,471 INFO HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-06 15:51:50,479 INFO Atend 1-1584412-0 -> concluir=True conf=0.95 cqs=55 imagens_ocr=0
+2026-10-06 15:51:52,267 INFO HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-06 15:51:52,295 INFO Atend 1-1584430-0 -> concluir=True conf=0.90 cqs=55 imagens_ocr=0
+2026-10-06 15:51:55,179 INFO HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-06 15:51:55,197 INFO Atend 1-1584469-0 -> concluir=True conf=0.95 cqs=55 imagens_ocr=0
+2026-10-06 15:51:57,502 INFO HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-06 15:51:57,517 INFO Atend 1-1584474-0 -> concluir=True conf=0.95 cqs=54 imagens_ocr=0
+2026-10-06 15:52:01,913 INFO HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-06 15:52:01,942 INFO Atend 1-119020295-0 -> concluir=True conf=0.95 cqs=55 imagens_ocr=0
+2026-10-06 15:52:03,899 INFO HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-06 15:52:03,928 INFO Atend 1-1591276-0 -> concluir=True conf=0.90 cqs=55 imagens_ocr=0
+2026-10-06 15:52:05,798 INFO HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-06 15:52:05,817 INFO Atend 1-1591306-0 -> concluir=True conf=0.90 cqs=54 imagens_ocr=0
+2026-10-06 15:52:09,074 INFO HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-06 15:52:09,114 INFO Atend 1-1559749-0 -> concluir=True conf=0.90 cqs=55 imagens_ocr=0
+2026-10-06 15:52:09,290 INFO Atend 1-1566106-0: pasta do cliente não encontrada (sem link nas iterações e nome 'HI.TOP Industria química' não bate com nenhuma pasta; use [pastas_clientes])
+2026-10-06 15:52:11,578 INFO HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-06 15:52:11,587 INFO Atend 1-1566106-0 -> concluir=True conf=1.00 cqs=55 imagens_ocr=0
+2026-10-06 15:52:14,547 INFO HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-06 15:52:14,569 INFO Atend 1-1566069-0 -> concluir=True conf=0.95 cqs=54 imagens_ocr=0
+2026-10-06 15:52:16,636 INFO HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-06 15:52:16,667 INFO Atend 1-735588-0 -> concluir=True conf=0.95 cqs=54 imagens_ocr=0
+2026-10-06 15:52:16,729 INFO Ciclo ok: 20 avaliados, 1 erros, 69880/2918 tokens
+2026-10-06 16:56:13,281 INFO 39 candidatos encontrados
+2026-10-06 16:56:13,287 INFO 35 tipos de CQS carregados
+2026-10-06 16:56:13,351 WARNING Áudios desativados (faster-whisper indisponível): No module named 'faster_whisper'
+2026-10-06 16:56:13,352 WARNING OCR desativado (Tesseract/pytesseract indisponível): No module named 'pytesseract'
+2026-10-06 16:56:14,648 INFO Atend 1-5910493-0: pasta do cliente não encontrada (sem link nas iterações e nome 'Empilhatec - Matriz' não bate com nenhuma pasta; use [pastas_clientes])
+2026-10-06 16:56:17,086 INFO Atend 1-1566047-0: pasta do cliente não encontrada (sem link nas iterações e nome 'Guidauto Peças - Matriz' não bate com nenhuma pasta; use [pastas_clientes])
+2026-10-06 16:56:17,683 INFO Atend 1-1584135-0: pasta do cliente não encontrada (sem link nas iterações e nome 'Pescados Serra e Mar - Unidade BH' não bate com nenhuma pasta; use [pastas_clientes])
+2026-10-06 16:56:17,732 INFO Atend 1-1584394-0: pasta do cliente não encontrada (sem link nas iterações e nome 'Pescados Serra e Mar - Unidade BH' não bate com nenhuma pasta; use [pastas_clientes])
+2026-10-06 16:56:18,062 ERROR Erro no atendimento 1-1584394-0: 'utf-8' codec can't encode characters in position 14716-14717: surrogates not allowed
+Traceback (most recent call last):
+  File "C:\Users\alex\Documents\Python\agente_conclusao\agente.py", line 493, in ciclo
+    res, i, o = avaliar(client, cfg, at, historico, catalogo, exemplos, prot,
+                ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                        "\n".join(fichas_txt), "\n".join(audios_txt))
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\alex\Documents\Python\agente_conclusao\agente.py", line 345, in avaliar
+    texto, tin, tout = llm.chamar(cfg["agente"]["provider"], client, cfg["agente"]["modelo"],
+                       ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                                  system, user, max_tok)
+                                  ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\alex\Documents\Python\agente_conclusao\llm.py", line 29, in chamar
+    r = client.chat.completions.create(
+        model=modelo, max_completion_tokens=max_tokens,
+        messages=[{"role": "system", "content": system}, {"role": "user", "content": user}], **kw)
+  File "C:\Users\alex\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\openai\_utils\_utils.py", line 298, in wrapper
+    return func(*args, **kwargs)
+  File "C:\Users\alex\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\openai\resources\chat\completions\completions.py", line 1318, in create
+    return self._post(
+           ~~~~~~~~~~^
+        "/chat/completions",
+        ^^^^^^^^^^^^^^^^^^^^
+    ...<53 lines>...
+        stream_cls=Stream[ChatCompletionChunk],
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\alex\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\openai\_base_client.py", line 1440, in post
+    return cast(ResponseT, self.request(cast_to, opts, stream=stream, stream_cls=stream_cls))
+                           ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\alex\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\openai\_base_client.py", line 1129, in request
+    request = self._build_request(options, retries_taken=retries_taken)
+  File "C:\Users\alex\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\openai\_base_client.py", line 653, in _build_request
+    kwargs["content"] = openapi_dumps(json_data) if is_given(json_data) and json_data is not None else None
+                        ~~~~~~~~~~~~~^^^^^^^^^^^
+  File "C:\Users\alex\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\openai\_utils\_json.py", line 25, in openapi_dumps
+    ).encode()
+      ~~~~~~^^
+UnicodeEncodeError: 'utf-8' codec can't encode characters in position 14716-14717: surrogates not allowed
+2026-10-06 16:56:18,676 INFO Atend 1-1584412-0: pasta do cliente não encontrada (sem link nas iterações e nome 'Pescados Serra e Mar - Unidade BH' não bate com nenhuma pasta; use [pastas_clientes])
+2026-10-06 16:56:20,109 INFO Atend 1-1566106-0: pasta do cliente não encontrada (sem link nas iterações e nome 'HI.TOP Industria química' não bate com nenhuma pasta; use [pastas_clientes])
+2026-10-06 16:56:20,200 INFO Atend 1-1566120-0: pasta do cliente não encontrada (sem link nas iterações e nome 'Formoso Carnes e Derivados' não bate com nenhuma pasta; use [pastas_clientes])
+2026-10-06 16:56:23,137 INFO HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-06 16:56:23,171 INFO Atend 1-1566120-0 -> concluir=True conf=1.00 cqs=54 imagens_ocr=0
+2026-10-06 16:56:25,630 INFO HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-06 16:56:25,664 INFO Atend 1-1566121-0 -> concluir=True conf=0.95 cqs=54 imagens_ocr=0
+2026-10-06 16:56:27,948 INFO HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-06 16:56:27,999 INFO Atend 1-735590-0 -> concluir=True conf=0.90 cqs=55 imagens_ocr=0
+2026-10-06 16:56:30,376 INFO HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-06 16:56:30,406 INFO Atend 1-1591288-0 -> concluir=False conf=0.90 cqs=- imagens_ocr=0
+2026-10-06 16:56:30,447 INFO Atend 1-1591295-0: pasta do cliente não encontrada (sem link nas iterações e nome 'Lojas Brasil - São João del Rei - Matozinhos' não bate com nenhuma pasta; use [pastas_clientes])
+2026-10-06 16:56:32,291 INFO HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-06 16:56:32,355 INFO Atend 1-1591295-0 -> concluir=True conf=0.90 cqs=54 imagens_ocr=0
+2026-10-06 16:56:33,844 INFO HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-06 16:56:33,881 INFO Atend 1-1584441-0 -> concluir=True conf=0.90 cqs=55 imagens_ocr=0
+2026-10-06 16:56:33,925 INFO Ciclo ok: 6 avaliados, 1 erros, 19414/802 tokens
+2026-10-06 17:15:21,642 INFO 41 candidatos encontrados
+2026-10-06 17:15:21,645 INFO 35 tipos de CQS carregados
+2026-10-06 17:15:21,723 WARNING Áudios desativados (faster-whisper indisponível): No module named 'faster_whisper'
+2026-10-06 17:15:21,724 WARNING OCR desativado (Tesseract/pytesseract indisponível): No module named 'pytesseract'
+2026-10-06 17:15:22,305 INFO Atend 1-1579141-0: pasta do cliente não encontrada (sem link nas iterações e nome 'Gomes Metalúrgica - Matriz' não bate com nenhuma pasta; use [pastas_clientes])
+2026-10-06 17:15:25,991 INFO HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-06 17:15:26,022 INFO Atend 1-1579141-0 -> concluir=True conf=0.90 cqs=54 imagens_ocr=0
+2026-10-06 17:15:27,055 INFO Atend 1-5910493-0: pasta do cliente não encontrada (sem link nas iterações e nome 'Empilhatec - Matriz' não bate com nenhuma pasta; use [pastas_clientes])
+2026-10-06 17:15:29,221 INFO Atend 1-1566047-0: pasta do cliente não encontrada (sem link nas iterações e nome 'Guidauto Peças - Matriz' não bate com nenhuma pasta; use [pastas_clientes])
+2026-10-06 17:15:29,689 INFO Atend 1-1584135-0: pasta do cliente não encontrada (sem link nas iterações e nome 'Pescados Serra e Mar - Unidade BH' não bate com nenhuma pasta; use [pastas_clientes])
+2026-10-06 17:15:29,734 INFO Atend 1-1584394-0: pasta do cliente não encontrada (sem link nas iterações e nome 'Pescados Serra e Mar - Unidade BH' não bate com nenhuma pasta; use [pastas_clientes])
+2026-10-06 17:15:29,896 ERROR Erro no atendimento 1-1584394-0: 'utf-8' codec can't encode characters in position 14887-14888: surrogates not allowed
+Traceback (most recent call last):
+  File "C:\Users\alex\Documents\Python\agente_conclusao\agente.py", line 493, in ciclo
+    res, i, o = avaliar(client, cfg, at, historico, catalogo, exemplos, prot,
+                ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                        "\n".join(fichas_txt), "\n".join(audios_txt))
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\alex\Documents\Python\agente_conclusao\agente.py", line 345, in avaliar
+    texto, tin, tout = llm.chamar(cfg["agente"]["provider"], client, cfg["agente"]["modelo"],
+                       ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                                  system, user, max_tok)
+                                  ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\alex\Documents\Python\agente_conclusao\llm.py", line 29, in chamar
+    r = client.chat.completions.create(
+        model=modelo, max_completion_tokens=max_tokens,
+        messages=[{"role": "system", "content": system}, {"role": "user", "content": user}], **kw)
+  File "C:\Users\alex\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\openai\_utils\_utils.py", line 298, in wrapper
+    return func(*args, **kwargs)
+  File "C:\Users\alex\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\openai\resources\chat\completions\completions.py", line 1318, in create
+    return self._post(
+           ~~~~~~~~~~^
+        "/chat/completions",
+        ^^^^^^^^^^^^^^^^^^^^
+    ...<53 lines>...
+        stream_cls=Stream[ChatCompletionChunk],
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\alex\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\openai\_base_client.py", line 1440, in post
+    return cast(ResponseT, self.request(cast_to, opts, stream=stream, stream_cls=stream_cls))
+                           ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\alex\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\openai\_base_client.py", line 1129, in request
+    request = self._build_request(options, retries_taken=retries_taken)
+  File "C:\Users\alex\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\openai\_base_client.py", line 653, in _build_request
+    kwargs["content"] = openapi_dumps(json_data) if is_given(json_data) and json_data is not None else None
+                        ~~~~~~~~~~~~~^^^^^^^^^^^
+  File "C:\Users\alex\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\openai\_utils\_json.py", line 25, in openapi_dumps
+    ).encode()
+      ~~~~~~^^
+UnicodeEncodeError: 'utf-8' codec can't encode characters in position 14887-14888: surrogates not allowed
+2026-10-06 17:15:30,072 INFO Atend 1-1584412-0: pasta do cliente não encontrada (sem link nas iterações e nome 'Pescados Serra e Mar - Unidade BH' não bate com nenhuma pasta; use [pastas_clientes])
+2026-10-06 17:15:32,884 INFO HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-06 17:15:32,921 INFO Atend 1-9316832-0 -> concluir=True conf=0.95 cqs=55 imagens_ocr=0
+2026-10-06 17:15:33,024 INFO Atend 1-9316833-0: pasta do cliente não encontrada (sem link nas iterações e nome 'SOMIX RIO' não bate com nenhuma pasta; use [pastas_clientes])
+2026-10-06 17:15:35,104 INFO HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-06 17:15:35,120 INFO Atend 1-9316833-0 -> concluir=True conf=0.90 cqs=55 imagens_ocr=0
+2026-10-06 17:15:36,176 INFO Atend 1-1566106-0: pasta do cliente não encontrada (sem link nas iterações e nome 'HI.TOP Industria química' não bate com nenhuma pasta; use [pastas_clientes])
+2026-10-06 17:15:36,194 INFO Atend 1-1566120-0: pasta do cliente não encontrada (sem link nas iterações e nome 'Formoso Carnes e Derivados' não bate com nenhuma pasta; use [pastas_clientes])
+2026-10-06 17:15:37,002 INFO Atend 1-1591295-0: pasta do cliente não encontrada (sem link nas iterações e nome 'Lojas Brasil - São João del Rei - Matozinhos' não bate com nenhuma pasta; use [pastas_clientes])
+2026-10-06 17:15:37,196 INFO Ciclo ok: 3 avaliados, 1 erros, 9838/410 tokens

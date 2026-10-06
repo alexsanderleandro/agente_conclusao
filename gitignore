@@ -1,11 +1,13 @@
 # credenciais (conn_string com usuário/senha do banco)
 config.ini
 config.ini.tmp
+chave_mestra.key
 
 # dados locais do agente (decisões do analista, logs)
 avaliacoes.db
 avaliacoes.db-journal
 agente.log
+ultimo_usuario.txt
 
 # python
 __pycache__/

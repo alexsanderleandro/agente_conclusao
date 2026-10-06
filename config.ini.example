@@ -10,12 +10,17 @@ max_chars_historico = 12000
 ; aprendizado: quantos exemplos de cada tipo (aceitos e rejeitados) entram no prompt. 0 desliga.
 ; Mais exemplos = IA mais calibrada, porém mais token por avaliação.
 exemplos_por_tipo = 3
+; quando a tabela CQSTipoRegistro mudar, reclassifica os "Sim" ainda pendentes (consome crédito)
+reavaliar_quando_cqs_mudar = sim
 ; provider: openai ou anthropic
 provider = openai
 ; confira o nome do modelo na sua conta OpenAI (um modelo "mini" costuma bastar)
 modelo = gpt-4.1-mini
 max_tokens_resposta = 800
-; nome da variável de ambiente com a chave da API
+; Cada usuário cadastra provedor/modelo/chave no painel (gravado cifrado em [chaves_api]).
+; Para rodar como serviço sem ninguém logado, informe de qual usuário usar a chave:
+usuario_servico =
+; Modo antigo (só se nenhum usuário for informado): provider/modelo acima + chave na variável abaixo
 api_key_env = OPENAI_API_KEY
 ; sugestões abaixo desse valor aparecem no dashboard como "baixa confiança"
 limite_confianca = 0.8
@@ -37,6 +42,7 @@ candidatos =
            A.NumAtendimento  AS numatendimento,
            A.Desdobramento   AS desdobramento,
            A.AssuntoAtendimento AS assunto,
+           A.CodCliente      AS codcliente,
            C.NomeCliente     AS cliente,
            COALESCE(UA.NomeUsuario, CAST(A.CodUsuario AS VARCHAR(20))) AS analista
     FROM Atendimento A WITH (NOLOCK)
@@ -83,6 +89,59 @@ cqs_tipos =
            DescricaoTipoRegistro AS descricaotiporegistro,
            Pontos                AS pontos
     FROM CQSTipoRegistro WITH (NOLOCK)
+
+[cqs]
+; Códigos de CQS que a IA pode usar (separados por vírgula). Vazio = todos da tabela.
+; Tipos administrativos/negativos (ranking, horário, ficha atrasada...) não devem entrar aqui.
+; principal: classificação do atendimento | secundario: registros de "Atualização: ..." por analista
+; secundario vazio = mesma lista do principal
+principal = 52,54,55,56,57,58,59,60,63,64,65
+secundario = 55,56,59,60,63,65
+
+[privacidade]
+; LGPD - nada disso altera o banco do ERP; vale só para o que é enviado à IA.
+; Camada 1: CPF, CNPJ, chave NF-e, e-mail, telefone, cartão, IP e senhas viram [CPF], [SENHA]...
+mascarar_dados = sim
+; Nomes de usuários do ERP e do cliente viram [USUARIO_123] / [CLIENTE] no envio
+; e voltam ao nome real no resumo, localmente.
+pseudonimizar_nomes = sim
+; Camada 2: ler os prints (PNG) dos atendimentos por OCR local. A imagem NÃO é enviada,
+; só o texto lido, já mascarado. Requer o Tesseract instalado.
+ler_imagens = sim
+tesseract_cmd = C:\Program Files\Tesseract-OCR\tesseract.exe
+ocr_idioma = por+eng
+max_imagens_por_atendimento = 5
+
+[fichas]
+; Fichas de visita (PDF, foto ou escaneado) na pasta do cliente na rede:
+;   <raiz>\<PastaDoCliente>\<subpasta>\FichaDeVisita(Assinada) -Cliente- 23set2026.pdf
+; Pendência na ficha (explícita ou implícita) impede a conclusão.
+verificar = sim
+; Rodando como serviço (NSSM), drive mapeado (M:) não existe: use o caminho UNC (\\servidor\pasta)
+raiz = M:\
+subpasta = FichaVisita
+max_fichas_por_atendimento = 3
+max_paginas = 5
+max_chars_ficha = 6000
+
+[audios]
+; Áudios de WhatsApp: transcritos LOCALMENTE (faster-whisper, CPU). O áudio não sai do servidor;
+; só o texto transcrito vai para a IA, já mascarado. Procura:
+;   1) caminhos citados na iteração (ex.: M:\GET\Audios WhatsApp\Atend_5910473 .ogg)
+;   2) <pasta do cliente>\<subpasta>\ arquivos com o nº do atendimento no nome
+transcrever = sim
+subpasta = Audios WhatsApp
+; tiny/base (rápidos, piores) | small (bom equilíbrio) | medium (melhor, mais lento)
+modelo_whisper = small
+dispositivo = cpu
+max_audios_por_atendimento = 5
+max_minutos_por_audio = 10
+; Como serviço (NSSM) o drive M: não existe: troque pela pasta de rede. Ex.: M:\=\\servidor\dados\
+mapear_unidade =
+
+[pastas_clientes]
+; Quando o nome da pasta não bate com o nome do cliente, informe aqui: CodCliente = Pasta
+; 1234 = MinasFreios
 
 [saida]
 sqlite = avaliacoes.db
