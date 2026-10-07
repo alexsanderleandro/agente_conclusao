@@ -10,3 +10,4 @@ pypdfium2
 cryptography
 google-genai
 faster-whisper
+reportlab

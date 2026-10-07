@@ -3,6 +3,7 @@
 conn_string = DRIVER={ODBC Driver 17 for SQL Server};SERVER=SEU_SERVIDOR;DATABASE=BDCEOSoftware;UID=usuario_leitura;PWD=senha
 
 [agente]
+; usado só com [agendamento] modo = intervalo
 intervalo_minutos = 15
 ; limite de atendimentos avaliados por ciclo (controla custo de token)
 max_por_ciclo = 20
@@ -95,8 +96,8 @@ cqs_tipos =
 ; Tipos administrativos/negativos (ranking, horário, ficha atrasada...) não devem entrar aqui.
 ; principal: classificação do atendimento | secundario: registros de "Atualização: ..." por analista
 ; secundario vazio = mesma lista do principal
-principal = 52,54,55,56,57,58,59,60,63,65
-secundario = 59,60,63,65
+principal = 52,54,55,56,57,58,59,60,63,64,65
+secundario = 55,56,59,60,63,65
 
 [privacidade]
 ; LGPD - nada disso altera o banco do ERP; vale só para o que é enviado à IA.
@@ -142,6 +143,40 @@ mapear_unidade =
 [pastas_clientes]
 ; Quando o nome da pasta não bate com o nome do cliente, informe aqui: CodCliente = Pasta
 ; 1234 = MinasFreios
+
+[agendamento]
+; modo = horario  -> roda nos dias/horários abaixo (relê o ini a cada minuto, não precisa reiniciar)
+; modo = intervalo -> modo antigo, a cada [agente] intervalo_minutos
+modo = horario
+; seg, ter, qua, qui, sex, sab, dom - lista (seg,qua,sex) ou faixa (seg-sab)
+dias = seg-sab
+; um ou mais horários HH:MM separados por vírgula (ex.: 12:00, 19:00). Hora do servidor.
+horarios = 19:00
+
+[email]
+; Envia o PDF do ciclo por e-mail. Ciclo sem avaliações não gera PDF e não envia nada.
+enviar = sim
+; Locaweb: porta 587 (STARTTLS, recomendada) | 465 (SSL) | 2525 (se as outras estiverem bloqueadas)
+; confira o servidor SMTP no painel do e-mail da Locaweb
+smtp_host = email-ssl.com.br
+porta = 587
+usuario = suporte@ceosoftware.com.br
+remetente = Agente de Revisão CEOSoftware <suporte@ceosoftware.com.br>
+; separados por ; ou ,
+destinatarios = alex@ceosoftware.com.br; marcoaurelio@ceosoftware.com.br
+copia =
+; {data} = data/hora do ciclo | {concluir} = quantos podem concluir
+assunto = Revisão de conclusão – ciclo {data} – {concluir} para concluir
+; "Buscar próximos" no painel também envia e-mail?
+enviar_em_busca_manual = nao
+timeout_segundos = 60
+; senha da conta: cadastre pelo painel (fica cifrada aqui, não digite à mão)
+senha =
+
+[relatorio]
+; Relatório PDF de cada ciclo (Modelo B), salvo nesta pasta (relativa à pasta do agente ou absoluta)
+gerar = sim
+pasta = relatorios
 
 [saida]
 sqlite = avaliacoes.db

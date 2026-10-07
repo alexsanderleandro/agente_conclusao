@@ -8,6 +8,7 @@ avaliacoes.db
 avaliacoes.db-journal
 agente.log
 ultimo_usuario.txt
+relatorios/
 
 # python
 __pycache__/

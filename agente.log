@@ -1602,3 +1602,74 @@ KeyError: 'OPENAI_API_KEY'
 2026-10-07 14:33:58,286 INFO 32 tipos de CQS carregados
 2026-10-07 14:34:02,140 INFO Atend 1-1591315-0: pasta do cliente não encontrada (sem link nas iterações e nome 'HI.TOP Industria química' não bate com nenhuma pasta; use [pastas_clientes])
 2026-10-07 14:34:02,304 INFO Ciclo ok: 0 avaliados, 0 erros, 0/0 tokens
+2026-10-07 15:58:24,550 INFO Usando a chave de IA de 'alex' (openai / gpt-4.1-mini)
+2026-10-07 15:58:25,398 INFO Limite deste ciclo: 10 avaliações
+2026-10-07 15:58:25,540 INFO 11 candidatos encontrados
+2026-10-07 15:58:25,563 INFO 32 tipos de CQS carregados
+2026-10-07 15:58:26,762 INFO Atend 1-5910350-0: pasta do cliente não encontrada (sem link nas iterações e nome 'Lavanda Cosméticos' não bate com nenhuma pasta; use [pastas_clientes])
+2026-10-07 15:58:35,552 INFO HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-07 15:58:35,616 INFO Atend 1-5910350-0 -> concluir=True conf=0.95 cqs=55 imagens_ocr=5
+2026-10-07 15:58:38,068 INFO HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-07 15:58:38,111 INFO Atend 1-1559734-0 -> concluir=True conf=0.90 cqs=54 imagens_ocr=0
+2026-10-07 15:58:40,701 INFO HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-07 15:58:40,748 INFO Atend 1-1559746-0 -> concluir=True conf=0.90 cqs=55 imagens_ocr=0
+2026-10-07 15:58:45,175 INFO HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-07 15:58:45,217 INFO Atend 1-5910612-0 -> concluir=True conf=0.90 cqs=54 imagens_ocr=1
+2026-10-07 15:58:47,156 INFO HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-07 15:58:47,227 INFO Atend 1-5910613-0 -> concluir=True conf=0.95 cqs=55 imagens_ocr=0
+2026-10-07 15:58:47,361 WARNING Fichas: pasta ambígua para 'RPM Auto Peças' (Rap Autopecas, M&BAutoPecas); use [pastas_clientes] no config.ini
+2026-10-07 15:58:47,361 INFO Atend 1-5910627-0: pasta do cliente não encontrada (sem link nas iterações e nome 'RPM Auto Peças' não bate com nenhuma pasta; use [pastas_clientes])
+2026-10-07 15:58:47,362 WARNING Fichas: pasta ambígua para 'RPM Auto Peças' (Rap Autopecas, M&BAutoPecas); use [pastas_clientes] no config.ini
+2026-10-07 15:58:50,772 INFO HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-07 15:58:50,788 INFO Atend 1-5910627-0 -> concluir=False conf=0.90 cqs=- imagens_ocr=1
+2026-10-07 15:58:53,926 INFO HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-07 15:58:53,948 INFO Atend 1-1579086-0 -> concluir=True conf=1.00 cqs=54 imagens_ocr=1
+2026-10-07 15:58:56,032 INFO HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-07 15:58:56,092 INFO Atend 1-1579087-0 -> concluir=True conf=0.95 cqs=54 imagens_ocr=0
+2026-10-07 15:58:59,498 INFO HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-07 15:58:59,519 INFO Atend 1-1579105-0 -> concluir=True conf=0.95 cqs=55 imagens_ocr=1
+2026-10-07 15:58:59,706 INFO Atend 1-1579129-0: pasta do cliente não encontrada (sem link nas iterações e nome 'Bio-Hes Distribuidora' não bate com nenhuma pasta; use [pastas_clientes])
+2026-10-07 15:59:02,387 INFO HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-07 15:59:02,448 INFO Atend 1-1579129-0 -> concluir=True conf=1.00 cqs=54 imagens_ocr=1
+2026-10-07 15:59:02,470 INFO Ciclo ok: 10 avaliados, 0 erros, 36876/1507 tokens
+2026-10-07 15:59:02,486 ERROR Falha ao gerar o relatório PDF do ciclo
+Traceback (most recent call last):
+  File "C:\Users\alex\Documents\Python\agente_conclusao\agente.py", line 698, in ciclo
+    from relatorio import gerar_relatorio
+  File "C:\Users\alex\Documents\Python\agente_conclusao\relatorio.py", line 11, in <module>
+    from reportlab.lib import colors
+ModuleNotFoundError: No module named 'reportlab'
+2026-10-07 16:23:28,293 INFO Usando a chave de IA de 'alex' (openai / gpt-4.1-mini)
+2026-10-07 16:23:29,229 INFO Limite deste ciclo: 10 avaliações
+2026-10-07 16:23:29,336 INFO 3 candidatos encontrados
+2026-10-07 16:23:29,376 INFO 32 tipos de CQS carregados
+2026-10-07 16:23:30,170 WARNING Fichas: pasta ambígua para 'RPM Auto Peças' (Rap Autopecas, M&BAutoPecas); use [pastas_clientes] no config.ini
+2026-10-07 16:23:30,170 INFO Atend 1-5910627-0: pasta do cliente não encontrada (sem link nas iterações e nome 'RPM Auto Peças' não bate com nenhuma pasta; use [pastas_clientes])
+2026-10-07 16:23:30,171 WARNING Fichas: pasta ambígua para 'RPM Auto Peças' (Rap Autopecas, M&BAutoPecas); use [pastas_clientes] no config.ini
+2026-10-07 16:23:30,463 INFO Atend 1-1584481-0: pasta do cliente não encontrada (sem link nas iterações e nome 'Brasil Centro Automotivo' não bate com nenhuma pasta; use [pastas_clientes])
+2026-10-07 16:23:35,566 INFO HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-07 16:23:35,634 INFO Atend 1-1584481-0 -> concluir=True conf=0.90 cqs=55 imagens_ocr=1
+2026-10-07 16:23:37,803 INFO HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-07 16:23:37,829 INFO Atend 1-1559747-0 -> concluir=True conf=0.90 cqs=55 imagens_ocr=0
+2026-10-07 16:23:37,849 INFO Ciclo ok: 2 avaliados, 0 erros, 7623/368 tokens
+2026-10-07 16:23:37,852 ERROR Falha ao gerar o relatório PDF do ciclo
+Traceback (most recent call last):
+  File "C:\Users\alex\Documents\Python\agente_conclusao\agente.py", line 698, in ciclo
+    from relatorio import gerar_relatorio
+  File "C:\Users\alex\Documents\Python\agente_conclusao\relatorio.py", line 11, in <module>
+    from reportlab.lib import colors
+ModuleNotFoundError: No module named 'reportlab'
+2026-10-07 16:40:57,299 INFO Usando a chave de IA de 'alex' (openai / gpt-4.1-mini)
+2026-10-07 16:40:58,116 INFO Limite deste ciclo: 10 avaliações
+2026-10-07 16:40:58,246 INFO 2 candidatos encontrados
+2026-10-07 16:40:58,254 INFO 32 tipos de CQS carregados
+2026-10-07 16:41:01,708 INFO HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-07 16:41:01,743 INFO Atend 1-1600121-0 -> concluir=True conf=0.90 cqs=54 imagens_ocr=0
+2026-10-07 16:41:01,788 INFO Ciclo ok: 1 avaliados, 0 erros, 3525/101 tokens
+2026-10-07 16:41:01,795 ERROR Falha ao gerar o relatório PDF do ciclo
+Traceback (most recent call last):
+  File "C:\Users\alex\Documents\Python\agente_conclusao\agente.py", line 698, in ciclo
+    from relatorio import gerar_relatorio
+  File "C:\Users\alex\Documents\Python\agente_conclusao\relatorio.py", line 11, in <module>
+    from reportlab.lib import colors
+ModuleNotFoundError: No module named 'reportlab'

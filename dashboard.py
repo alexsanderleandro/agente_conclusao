@@ -1,4 +1,5 @@
 import configparser
+import hashlib
 import json
 import os
 import re
@@ -14,6 +15,7 @@ import streamlit as st
 
 import cripto
 import llm
+from agendamento import NOMES, proxima_execucao
 
 BASE = Path(__file__).parent
 cfg = configparser.ConfigParser(interpolation=None)
@@ -64,6 +66,8 @@ def validar_login(usuario, senha):
 
 # ---- login: nada abaixo disso roda sem usuário logado ----
 if not st.session_state.get("usuario_logado"):
+    import tema_login
+    st.markdown(tema_login.css("c"), unsafe_allow_html=True)
     st.title("Revisão de conclusão de atendimentos")
     _, _col, _ = st.columns([1, 1, 1])
     with _col:
@@ -154,6 +158,146 @@ with st.expander(f"🔑 Minha IA: {llm.PROVEDORES.get(_cred['provedor'], {}).get
     form_chave_ia(_cred)
 
 
+# ---- agenda automática e e-mail do relatório: editável aqui, gravado no config.ini ----
+# (o painel relê o ini a cada interação, então mudar no arquivo também aparece aqui)
+_DIAS_INI = ("seg", "ter", "qua", "qui", "sex", "sab", "dom")
+_SIMS = ("sim", "s", "1", "true", "yes", "on")
+_EMAIL_RX = re.compile(r"^[^@\s;,]+@[^@\s;,]+\.[^@\s;,]+$")
+
+
+def _ini(sec, opc, padrao=""):
+    return cfg.get(sec, opc, fallback=padrao).strip()
+
+
+def _ini_bool(sec, opc, padrao=False):
+    v = _ini(sec, opc)
+    return padrao if not v else v.lower() in _SIMS
+
+
+def _emails(txt):
+    lst = [e.strip() for e in re.split(r"[;,\s]+", txt or "") if e.strip()]
+    ruins = [e for e in lst if not _EMAIL_RX.match(e)]
+    return lst, ruins
+
+
+try:
+    _prox = proxima_execucao(cfg)
+    _txt_agenda = (f"⏰ Próximo ciclo: {NOMES[_prox.weekday()]} {_prox:%d/%m %H:%M}" if _prox
+                   else f"⏰ Ciclo a cada {_ini('agente', 'intervalo_minutos', '15')} min")
+except Exception as e:
+    _txt_agenda = f"⏰ [agendamento] inválido: {e}"
+_email_on = _ini_bool("email", "enviar")
+_tem_senha = bool(_ini("email", "senha"))
+
+# chave dos widgets muda quando o ini muda -> o formulário sempre mostra o que está no arquivo
+_sig = hashlib.md5(repr([(s, sorted(cfg.items(s))) for s in ("agendamento", "email")
+                          if cfg.has_section(s)]).encode()).hexdigest()[:10]
+
+with st.expander(f"✉️ E-mail do relatório: {'ligado' if _email_on else 'desligado'}"
+                 f"{'' if _tem_senha or not _email_on else ' · ⚠️ senha não cadastrada'}   ·   {_txt_agenda}",
+                 expanded=bool(st.session_state.get("msg_email"))):
+    with st.form(f"form_email_{_sig}"):
+        st.markdown("**Agenda do ciclo automático**")
+        _a1, _a2, _a3, _a4 = st.columns([1.3, 3, 1.4, 1])
+        _modo = _a1.selectbox("Modo", ["horario", "intervalo"],
+                              index=0 if _ini("agendamento", "modo", "intervalo").lower() == "horario" else 1,
+                              format_func=lambda m: "Dias e horários" if m == "horario" else "Intervalo (min)")
+        try:
+            from agendamento import _dias_semana
+            _dias_atuais = [_DIAS_INI[i] for i in sorted(_dias_semana(_ini("agendamento", "dias", "seg-sab")))]
+        except Exception:
+            _dias_atuais = list(_DIAS_INI[:6])
+        _dias = _a2.multiselect("Dias", _DIAS_INI, default=_dias_atuais)
+        _horas = _a3.text_input("Horários (HH:MM)", value=_ini("agendamento", "horarios", "19:00"),
+                                help="Um ou mais, separados por vírgula. Ex.: 12:00, 19:00")
+        _interv = _a4.number_input("Intervalo (min)", min_value=1, step=1,
+                                   value=int(_ini("agente", "intervalo_minutos", "15") or 15),
+                                   help="Usado só no modo Intervalo")
+        st.markdown("**E-mail**")
+        _c1, _c2, _c3, _c4 = st.columns([1, 2.2, 0.8, 2.4])
+        _env = _c1.checkbox("Enviar e-mail", value=_email_on)
+        _host = _c2.text_input("Servidor SMTP", value=_ini("email", "smtp_host"))
+        _porta = _c3.number_input("Porta", min_value=1, max_value=65535, step=1,
+                                  value=int(_ini("email", "porta", "587") or 587),
+                                  help="587 STARTTLS · 465 SSL · 2525 alternativa")
+        _usr = _c4.text_input("Conta (login)", value=_ini("email", "usuario"))
+        _rem = st.text_input("Remetente (nome e e-mail)", value=_ini("email", "remetente"))
+        _para = st.text_input("Destinatários (separe com ;)", value=_ini("email", "destinatarios"))
+        _cc = st.text_input("Cópia (opcional)", value=_ini("email", "copia"))
+        _ass = st.text_input("Assunto", value=_ini("email", "assunto"),
+                             help="{data} = data/hora do ciclo · {concluir} = quantos podem concluir")
+        _man = st.checkbox("Enviar também no \"Buscar próximos\" do painel",
+                           value=_ini_bool("email", "enviar_em_busca_manual"))
+        _sn = st.text_input("Senha da conta", type="password",
+                            placeholder="deixe vazio para manter a atual" if _tem_senha else "senha da conta",
+                            help="Só é gravada se o e-mail de teste funcionar. Fica cifrada no config.ini.")
+        _f1, _f2 = st.columns(2)
+        _salvar = _f1.form_submit_button("💾 Salvar no config.ini", type="primary")
+        _testar = _f2.form_submit_button("✉️ Salvar e enviar teste")
+
+    if _salvar or _testar:
+        _erros = []
+        _lp, _rp = _emails(_para)
+        _lc, _rc = _emails(_cc)
+        if _rp or _rc:
+            _erros.append(f"E-mail inválido: {', '.join(_rp + _rc)}")
+        if _env and not _lp:
+            _erros.append("Informe ao menos um destinatário.")
+        if _usr.strip() and not _EMAIL_RX.match(_usr.strip()):
+            _erros.append("Conta (login) deve ser um e-mail.")
+        _hs = [h.strip() for h in re.split(r"[,;\s]+", _horas) if h.strip()]
+        try:
+            _hs = [datetime.strptime(h, "%H:%M").strftime("%H:%M") for h in _hs]
+        except ValueError:
+            _erros.append("Horário inválido: use HH:MM, ex.: 19:00")
+        if _modo == "horario" and (not _dias or not _hs):
+            _erros.append("Escolha ao menos um dia e um horário.")
+        if _erros:
+            for _e in _erros:
+                st.error(_e)
+        else:
+            _novos = {
+                ("agendamento", "modo"): _modo,
+                ("agendamento", "dias"): ",".join(d for d in _DIAS_INI if d in _dias),
+                ("agendamento", "horarios"): ", ".join(sorted(set(_hs))),
+                ("agente", "intervalo_minutos"): str(int(_interv)),
+                ("email", "enviar"): "sim" if _env else "nao",
+                ("email", "smtp_host"): _host.strip(),
+                ("email", "porta"): str(int(_porta)),
+                ("email", "usuario"): _usr.strip(),
+                ("email", "remetente"): _rem.strip(),
+                ("email", "destinatarios"): "; ".join(_lp),
+                ("email", "copia"): "; ".join(_lc),
+                ("email", "assunto"): _ass.strip(),
+                ("email", "enviar_em_busca_manual"): "sim" if _man else "nao",
+            }
+            try:
+                for (_s, _o), _v in _novos.items():
+                    if _ini(_s, _o) != _v:
+                        cripto.gravar_opcao(_s, _o, _v)
+                _msg = "Configuração salva no config.ini (o agente aplica em até 1 minuto)."
+                if _testar or _sn:
+                    import email_relatorio
+                    _cfg2 = configparser.ConfigParser(interpolation=None)
+                    _cfg2.read(BASE / "config.ini", encoding="utf-8")
+                    with st.spinner("Enviando e-mail de teste..."):
+                        _dest = email_relatorio.enviar_teste(_cfg2, senha=_sn or None)
+                    if _sn:
+                        cripto.salvar_senha_email(_sn)
+                        _msg += " Senha salva."
+                    _msg += f" Teste enviado para: {', '.join(_dest)}"
+                st.session_state["msg_email"] = ("ok", _msg)
+            except Exception as e:
+                st.session_state["msg_email"] = ("erro", f"Configuração salva, mas o teste falhou"
+                                                         f"{' (senha NÃO foi salva)' if _sn else ''}: "
+                                                         + ("usuário ou senha recusados pelo servidor SMTP"
+                                                            if "535" in str(e) or "auth" in str(e).lower() else str(e)))
+            st.rerun()
+    if st.session_state.get("msg_email"):
+        _t, _m = st.session_state.pop("msg_email")
+        (st.success if _t == "ok" else st.error)(_m)
+
+
 def salvar_max_por_ciclo(valor):
     """Altera só a linha max_por_ciclo do config.ini, preservando comentários e formatação."""
     caminho = BASE / "config.ini"
@@ -241,7 +385,7 @@ def buscar_proximos(n):
     env = dict(os.environ, PYTHONIOENCODING="utf-8", PYTHONUTF8="1")
     try:
         p = subprocess.run([sys.executable, str(BASE / "agente.py"), "--uma-vez", "--max", str(int(n)),
-                            "--usuario", USUARIO],
+                            "--usuario", USUARIO, "--manual"],
                            cwd=str(BASE), env=env, capture_output=True, text=True,
                            encoding="utf-8", errors="replace", timeout=1800)
     except subprocess.TimeoutExpired:
@@ -286,6 +430,23 @@ if _bt1.button(f"🔄 Buscar próximos {int(_novo_max)}", type="primary"):
     st.rerun()
 _bt2.caption("Roda um ciclo do agente agora: avalia os próximos atendimentos ainda não avaliados "
              "(consome crédito da sua chave de IA).")
+_pasta_rel = cfg.get("relatorio", "pasta", fallback="relatorios")
+_pasta_rel = Path(_pasta_rel) if os.path.isabs(_pasta_rel) else BASE / _pasta_rel
+_pdfs = sorted(_pasta_rel.glob("Relatorio_ciclo_*.pdf"), reverse=True) if _pasta_rel.is_dir() else []
+if _pdfs:
+    _sel_pdf = _bt2.selectbox("Relatório do ciclo (PDF)", _pdfs, format_func=lambda p: (lambda s: f"Ciclo {s[8:10]}/{s[5:7]}/{s[0:4]} {s[11:13]}:{s[13:15]}:{s[15:17]}")(
+        p.stem.replace("Relatorio_ciclo_", "")), key="rel_pdf")
+    _bd1, _bd2 = _bt2.columns(2)
+    _bd1.download_button("📄 Baixar relatório", data=_sel_pdf.read_bytes(), file_name=_sel_pdf.name,
+                         mime="application/pdf")
+    if _bd2.button("✉️ Enviar por e-mail", help="Envia este relatório aos destinatários do [email] no config.ini"):
+        try:
+            import email_relatorio
+            with sqlite3.connect(DB) as _lite, st.spinner("Enviando..."):
+                _para = email_relatorio.enviar_relatorio(cfg, _lite, _sel_pdf, USUARIO)
+            st.success(f"Relatório enviado para: {', '.join(_para)}")
+        except Exception as e:
+            st.error(f"Não foi possível enviar: {e}")
 if _sem_dados:
     st.info("Ainda não há avaliações. Clique em **Buscar próximos** para fazer a primeira.")
     st.stop()

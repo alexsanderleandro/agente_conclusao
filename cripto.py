@@ -62,14 +62,39 @@ def carregar(cfg, usuario):
 
 def salvar(usuario, provedor, modelo, chave_api, caminho=CFG_PATH):
     """Grava/atualiza a linha do usuário em [chaves_api] sem mexer no resto do config.ini."""
-    k = _chave_usuario(usuario)
-    linha = f"{k} = {cifrar(provedor, modelo, chave_api)}"
+    gravar_opcao(SECAO, _chave_usuario(usuario), cifrar(provedor, modelo, chave_api), caminho)
+
+
+# ---- senha da conta de e-mail (SMTP), cifrada com a mesma chave-mestra ----
+def cifrar_texto(txt):
+    return _fernet(criar=True).encrypt(str(txt).encode()).decode()
+
+
+def decifrar_texto(token):
+    try:
+        return _fernet().decrypt(token.encode()).decode()
+    except InvalidToken:
+        raise RuntimeError("Não foi possível decifrar a senha (chave-mestra diferente da usada para gravar)")
+
+
+def salvar_senha_email(senha, caminho=CFG_PATH):
+    gravar_opcao("email", "senha", cifrar_texto(senha), caminho)
+
+
+def carregar_senha_email(cfg):
+    tok = cfg.get("email", "senha", fallback="").strip()
+    return decifrar_texto(tok) if tok else ""
+
+
+def gravar_opcao(secao, k, valor, caminho=CFG_PATH):
+    """Cria/atualiza 'k = valor' na [secao] do config.ini, preservando comentários e quebras de linha."""
+    linha = f"{k} = {valor}"
     with open(caminho, encoding="utf-8", newline="") as f:
         txt = f.read()
     nl = "\r\n" if "\r\n" in txt else "\n"
-    sec = re.search(rf"(?m)^\[{SECAO}\][ \t]*\r?$", txt)
+    sec = re.search(rf"(?m)^\[{re.escape(secao)}\][ \t]*\r?$", txt)
     if not sec:
-        txt = txt.rstrip("\r\n") + f"{nl}{nl}[{SECAO}]{nl}{linha}{nl}"
+        txt = txt.rstrip("\r\n") + f"{nl}{nl}[{secao}]{nl}{linha}{nl}"
     else:
         prox = re.search(r"(?m)^\[", txt[sec.end():])
         fim = sec.end() + (prox.start() if prox else len(txt) - sec.end())

@@ -27,6 +27,7 @@ import cripto
 import llm
 from audios import (Transcritor, audios_na_pasta, caminhos_no_texto, mapear_unidade,
                     pasta_cliente_pelos_links)
+from agendamento import NOMES, proxima_execucao
 from fichas import LocalizadorFichas, ler_ficha
 from privacidade import LeitorOCR, Pseudonimizador, extrair_pngs_rtf, mascarar_pii
 
@@ -78,7 +79,7 @@ def init_sqlite(path):
                 "cqs_ok INTEGER DEFAULT 0", "motivo TEXT", "decidido_em TEXT",
                 "fichas TEXT", "qtd_fichas INTEGER DEFAULT 0", "audios TEXT", "qtd_audios INTEGER DEFAULT 0",
                 "na_fila INTEGER DEFAULT 1", "cqs_versao TEXT", "cqs_secundarios TEXT",
-                "cqs_sec_ok INTEGER DEFAULT 0", "ciclo_inicio TEXT"):
+                "cqs_sec_ok INTEGER DEFAULT 0", "ciclo_inicio TEXT", "qtd_imagens INTEGER DEFAULT 0"):
         try:  # bancos criados antes do recurso CQS
             con.execute(f"ALTER TABLE avaliacoes ADD COLUMN {col}")
         except sqlite3.OperationalError:
@@ -410,6 +411,7 @@ def criar_client(cfg, usuario=None):
                 + (f" (cadastrados: {', '.join(cad)})" if cad else " (cadastre a chave no painel)")
                 + f", ou preencha usuario_servico no config.ini, ou defina a variável {var}.")
     cfg["agente"]["provider"], cfg["agente"]["modelo"] = prov, modelo  # usado no ciclo e gravado no painel
+    cfg["agente"]["usuario_execucao"] = usuario or ""
     return llm.criar_client(prov, chave)
 
 
@@ -450,7 +452,7 @@ def avaliar(client, cfg, atendimento, historico, catalogo=(), exemplos="", prot=
 
 
 # ---------- ciclo ----------
-def ciclo(cfg, lite, client):
+def ciclo(cfg, lite, client, manual=False):
     inicio = datetime.now().isoformat(timespec="seconds")
     avaliados = erros = tin = tout = 0
     max_chars = cfg.getint("agente", "max_chars_historico", fallback=12000)
@@ -653,8 +655,9 @@ def ciclo(cfg, lite, client):
                     """INSERT INTO avaliacoes(atendimento_id,cliente,assunto,analista,
                        qtd_interacoes,pode_concluir,confianca,justificativa,pendencias,
                        resumo,avaliado_em,modelo,cqs_cod,cqs_nome,cqs_descricao,cqs_pontos,cqs_ok,
-                       fichas,qtd_fichas,audios,qtd_audios,cqs_versao,cqs_secundarios,cqs_sec_ok,ciclo_inicio)
-                       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,1,?,?,?,?,?,?,1,?)""",
+                       fichas,qtd_fichas,audios,qtd_audios,cqs_versao,cqs_secundarios,cqs_sec_ok,ciclo_inicio,
+                       qtd_imagens)
+                       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,1,?,?,?,?,?,?,1,?,?)""",
                     (aid, at.get("cliente"), at.get("assunto"), at.get("analista"),
                      len(inter), int(pode), conf, res.get("justificativa"),
                      res.get("pendencias"), res.get("resumo"), datetime.now().isoformat(timespec="seconds"),
@@ -665,7 +668,8 @@ def ciclo(cfg, lite, client):
                      str(cqs.get("pontos")) if cqs else None,
                      "\n".join(nomes_fichas) or None, len(arquivos),
                      "\n".join(nomes_audios) or None, len(audios_pasta), cqs_versao,
-                     json.dumps(secundarios, ensure_ascii=False) if secundarios else None, inicio),
+                     json.dumps(secundarios, ensure_ascii=False) if secundarios else None, inicio,
+                     prot.imagens_lidas),
                 )
                 lite.commit()
                 log.info("Atend %s -> concluir=%s conf=%.2f cqs=%s imagens_ocr=%d", aid, pode, conf,
@@ -689,30 +693,83 @@ def ciclo(cfg, lite, client):
     lite.commit()
     log.info("Ciclo ok: %d avaliados, %d erros, %d/%d tokens", avaliados, erros, tin, tout)
 
+    # relatório PDF do ciclo (Modelo B)
+    if avaliados and cfg.getboolean("relatorio", "gerar", fallback=True):
+        try:
+            from relatorio import gerar_relatorio
+            pasta = cfg.get("relatorio", "pasta", fallback="relatorios")
+            pasta = pasta if os.path.isabs(pasta) else str(BASE / pasta)
+            pdf = gerar_relatorio(lite, inicio, pasta, cfg["agente"].get("usuario_execucao", ""),
+                                  f'{llm.PROVEDORES.get(cfg["agente"].get("provider", ""), {}).get("nome", cfg["agente"].get("provider", ""))}'
+                                  f' · {cfg["agente"].get("modelo", "")}')
+            if pdf:
+                log.info("Relatório do ciclo: %s", pdf)
+        except Exception:
+            pdf = None
+            log.exception("Falha ao gerar o relatório PDF do ciclo")
+        # e-mail com o PDF (ciclo vazio não gera PDF, então não envia)
+        if pdf and cfg.getboolean("email", "enviar", fallback=False) and (
+                not manual or cfg.getboolean("email", "enviar_em_busca_manual", fallback=False)):
+            try:
+                from email_relatorio import enviar_relatorio
+                para = enviar_relatorio(cfg, lite, pdf, cfg["agente"].get("usuario_execucao", ""))
+                log.info("Relatório enviado por e-mail para: %s", ", ".join(para))
+            except Exception:
+                log.exception("Falha ao enviar o relatório por e-mail (o PDF continua em %s)", pdf)
+    elif not avaliados:
+        log.info("Ciclo sem avaliações: nenhum relatório gerado nem enviado")
+
+
+def executar(args, manual=False):
+    try:
+        cfg = ler_cfg()
+        if args.max is not None:
+            cfg["agente"]["max_por_ciclo"] = str(args.max)
+        lite = init_sqlite(BASE / cfg["saida"]["sqlite"])
+        client = criar_client(cfg, args.usuario)
+        ciclo(cfg, lite, client, manual=manual)
+        lite.close()
+    except Exception:
+        log.exception("Falha no ciclo")
+
 
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--uma-vez", action="store_true")
     ap.add_argument("--max", type=int, default=None, help="sobrescreve max_por_ciclo nesta execução")
     ap.add_argument("--usuario", default=None, help="usa a chave de IA cadastrada por este usuário")
+    ap.add_argument("--manual", action="store_true", help="execução pelo painel (Buscar próximos)")
     args = ap.parse_args()
 
+    if args.uma_vez:
+        executar(args, manual=args.manual)
+        return
+
+    anunciado = None
     while True:
-        espera = 15 * 60
         try:
-            cfg = ler_cfg()
-            if args.max is not None:
-                cfg["agente"]["max_por_ciclo"] = str(args.max)
-            espera = cfg.getint("agente", "intervalo_minutos", fallback=15) * 60
-            lite = init_sqlite(BASE / cfg["saida"]["sqlite"])
-            client = criar_client(cfg, args.usuario)
-            ciclo(cfg, lite, client)
-            lite.close()
+            cfg = ler_cfg()                     # relido a cada minuto: mudou o ini, vale sem reiniciar
+            alvo = proxima_execucao(cfg)
         except Exception:
-            log.exception("Falha no ciclo")
-        if args.uma_vez:
-            break
-        time.sleep(espera)
+            log.exception("Erro no [agendamento] do config.ini; tentando de novo em 1 minuto")
+            time.sleep(60)
+            continue
+        if alvo is None:                        # modo intervalo (antigo)
+            executar(args)
+            time.sleep(cfg.getint("agente", "intervalo_minutos", fallback=15) * 60)
+            continue
+        if alvo != anunciado:
+            log.info("Próximo ciclo agendado: %s %s", NOMES[alvo.weekday()],
+                     alvo.strftime("%d/%m/%Y %H:%M"))
+            anunciado = alvo
+        falta = (alvo - datetime.now()).total_seconds()
+        if falta > 60:
+            time.sleep(60)
+            continue
+        time.sleep(max(falta, 0))
+        executar(args)
+        anunciado = None
+        time.sleep(1)
 
 
 if __name__ == "__main__":
