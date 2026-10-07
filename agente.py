@@ -78,7 +78,7 @@ def init_sqlite(path):
                 "cqs_ok INTEGER DEFAULT 0", "motivo TEXT", "decidido_em TEXT",
                 "fichas TEXT", "qtd_fichas INTEGER DEFAULT 0", "audios TEXT", "qtd_audios INTEGER DEFAULT 0",
                 "na_fila INTEGER DEFAULT 1", "cqs_versao TEXT", "cqs_secundarios TEXT",
-                "cqs_sec_ok INTEGER DEFAULT 0"):
+                "cqs_sec_ok INTEGER DEFAULT 0", "ciclo_inicio TEXT"):
         try:  # bancos criados antes do recurso CQS
             con.execute(f"ALTER TABLE avaliacoes ADD COLUMN {col}")
         except sqlite3.OperationalError:
@@ -371,19 +371,44 @@ def montar_exemplos(lite, cfg, prot=None, cqs_versao=None):
     )
 
 
+def _usuario_padrao(cfg):
+    """Sem --usuario: usa [agente] usuario_servico; senão o último que logou no painel;
+    senão, se só um usuário tiver chave cadastrada, esse."""
+    u = cfg.get("agente", "usuario_servico", fallback="").strip()
+    if u:
+        return u
+    try:
+        u = (BASE / "ultimo_usuario.txt").read_text(encoding="utf-8").strip()
+        if u and cripto.carregar(cfg, u):
+            return u
+    except Exception:
+        pass
+    cadastrados = cfg.options(cripto.SECAO) if cfg.has_section(cripto.SECAO) else []
+    return cadastrados[0] if len(cadastrados) == 1 else None
+
+
 def criar_client(cfg, usuario=None):
-    """Credencial da IA. Ordem: chave do usuário (cadastrada no painel, cifrada no config.ini) ->
-    [agente] usuario_servico (para rodar como serviço) -> variável de ambiente (modo antigo)."""
-    usuario = usuario or cfg.get("agente", "usuario_servico", fallback="").strip() or None
+    """Credencial da IA: chave do usuário cadastrada no painel (cifrada no config.ini).
+    Usuário: --usuario > usuario_servico > último login no painel > único cadastrado.
+    Só se nada disso existir, cai no modo antigo (variável de ambiente)."""
+    usuario = usuario or _usuario_padrao(cfg)
     if usuario:
         cred = cripto.carregar(cfg, usuario)
         if not cred:
             raise RuntimeError(f"Usuário '{usuario}' não tem chave de IA cadastrada no painel")
         prov, modelo, chave = cred["provedor"], cred["modelo"], cred["chave"]
+        log.info("Usando a chave de IA de '%s' (%s / %s)", usuario, prov, modelo)
     else:
         prov = cfg["agente"].get("provider", "openai").strip().lower()
         modelo = cfg["agente"]["modelo"]
-        chave = os.environ[cfg["agente"]["api_key_env"]]
+        var = cfg["agente"].get("api_key_env", "OPENAI_API_KEY")
+        chave = os.environ.get(var)
+        if not chave:
+            cad = cfg.options(cripto.SECAO) if cfg.has_section(cripto.SECAO) else []
+            raise RuntimeError(
+                "Não sei qual chave de IA usar. Rode com --usuario NOME"
+                + (f" (cadastrados: {', '.join(cad)})" if cad else " (cadastre a chave no painel)")
+                + f", ou preencha usuario_servico no config.ini, ou defina a variável {var}.")
     cfg["agente"]["provider"], cfg["agente"]["modelo"] = prov, modelo  # usado no ciclo e gravado no painel
     return llm.criar_client(prov, chave)
 
@@ -430,6 +455,7 @@ def ciclo(cfg, lite, client):
     avaliados = erros = tin = tout = 0
     max_chars = cfg.getint("agente", "max_chars_historico", fallback=12000)
     max_ciclo = cfg.getint("agente", "max_por_ciclo", fallback=20)
+    log.info("Limite deste ciclo: %d avaliações", max_ciclo)
 
     conn = pyodbc.connect(cfg["banco"]["conn_string"], readonly=True, timeout=30)
     try:
@@ -627,8 +653,8 @@ def ciclo(cfg, lite, client):
                     """INSERT INTO avaliacoes(atendimento_id,cliente,assunto,analista,
                        qtd_interacoes,pode_concluir,confianca,justificativa,pendencias,
                        resumo,avaliado_em,modelo,cqs_cod,cqs_nome,cqs_descricao,cqs_pontos,cqs_ok,
-                       fichas,qtd_fichas,audios,qtd_audios,cqs_versao,cqs_secundarios,cqs_sec_ok)
-                       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,1,?,?,?,?,?,?,1)""",
+                       fichas,qtd_fichas,audios,qtd_audios,cqs_versao,cqs_secundarios,cqs_sec_ok,ciclo_inicio)
+                       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,1,?,?,?,?,?,?,1,?)""",
                     (aid, at.get("cliente"), at.get("assunto"), at.get("analista"),
                      len(inter), int(pode), conf, res.get("justificativa"),
                      res.get("pendencias"), res.get("resumo"), datetime.now().isoformat(timespec="seconds"),
@@ -639,7 +665,7 @@ def ciclo(cfg, lite, client):
                      str(cqs.get("pontos")) if cqs else None,
                      "\n".join(nomes_fichas) or None, len(arquivos),
                      "\n".join(nomes_audios) or None, len(audios_pasta), cqs_versao,
-                     json.dumps(secundarios, ensure_ascii=False) if secundarios else None),
+                     json.dumps(secundarios, ensure_ascii=False) if secundarios else None, inicio),
                 )
                 lite.commit()
                 log.info("Atend %s -> concluir=%s conf=%.2f cqs=%s imagens_ocr=%d", aid, pode, conf,

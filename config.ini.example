@@ -95,8 +95,8 @@ cqs_tipos =
 ; Tipos administrativos/negativos (ranking, horário, ficha atrasada...) não devem entrar aqui.
 ; principal: classificação do atendimento | secundario: registros de "Atualização: ..." por analista
 ; secundario vazio = mesma lista do principal
-principal = 52,54,55,56,57,58,59,60,63,64,65
-secundario = 55,56,59,60,63,65
+principal = 52,54,55,56,57,58,59,60,63,65
+secundario = 59,60,63,65
 
 [privacidade]
 ; LGPD - nada disso altera o banco do ERP; vale só para o que é enviado à IA.

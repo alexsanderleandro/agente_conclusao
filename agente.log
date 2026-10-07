@@ -1419,3 +1419,186 @@ UnicodeEncodeError: 'utf-8' codec can't encode characters in position 14887-1488
 2026-10-06 17:15:36,194 INFO Atend 1-1566120-0: pasta do cliente não encontrada (sem link nas iterações e nome 'Formoso Carnes e Derivados' não bate com nenhuma pasta; use [pastas_clientes])
 2026-10-06 17:15:37,002 INFO Atend 1-1591295-0: pasta do cliente não encontrada (sem link nas iterações e nome 'Lojas Brasil - São João del Rei - Matozinhos' não bate com nenhuma pasta; use [pastas_clientes])
 2026-10-06 17:15:37,196 INFO Ciclo ok: 3 avaliados, 1 erros, 9838/410 tokens
+2026-10-07 11:44:19,568 INFO 38 candidatos encontrados
+2026-10-07 11:44:19,637 INFO 33 tipos de CQS carregados
+2026-10-07 11:44:29,395 WARNING OCR desativado (Tesseract/pytesseract indisponível): tesseract is not installed or it's not in your PATH. See README file for more information.
+2026-10-07 11:44:38,470 INFO HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-07 11:44:38,520 INFO Atend 1-5910493-0 -> concluir=True conf=0.95 cqs=54 imagens_ocr=0
+2026-10-07 11:44:44,595 INFO HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-07 11:44:44,605 INFO Atend 1-5910573-0 -> concluir=True conf=0.90 cqs=54 imagens_ocr=0
+2026-10-07 11:44:47,056 INFO HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-07 11:44:47,075 INFO Atend 1-1559749-0 -> concluir=True conf=0.95 cqs=55 imagens_ocr=0
+2026-10-07 11:44:50,316 INFO Atend 1-360252-0: pasta do cliente não encontrada (sem link nas iterações e nome 'Bio-Hes Distribuidora' não bate com nenhuma pasta; use [pastas_clientes])
+2026-10-07 11:44:59,110 INFO HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-07 11:44:59,136 INFO Atend 1-360252-0 -> concluir=True conf=0.90 cqs=54 imagens_ocr=0
+2026-10-07 11:45:00,350 INFO Atend 1-1578976-0: pasta do cliente não encontrada (sem link nas iterações e nome 'Bio-Hes Distribuidora' não bate com nenhuma pasta; use [pastas_clientes])
+2026-10-07 11:45:03,093 INFO HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-07 11:45:03,105 INFO Atend 1-1578976-0 -> concluir=True conf=0.95 cqs=54 imagens_ocr=0
+2026-10-07 11:45:07,011 INFO HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-07 11:45:07,023 INFO Atend 1-1579145-0 -> concluir=True conf=0.95 cqs=55 imagens_ocr=0
+2026-10-07 11:45:09,233 INFO HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-07 11:45:09,242 INFO Atend 1-9315226-0 -> concluir=True conf=0.90 cqs=54 imagens_ocr=0
+2026-10-07 11:45:09,286 INFO Atend 1-1565008-0: pasta do cliente não encontrada (sem link nas iterações e nome 'Bio-Hes Distribuidora' não bate com nenhuma pasta; use [pastas_clientes])
+2026-10-07 11:45:12,415 INFO HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-07 11:45:12,427 INFO Atend 1-1565008-0 -> concluir=True conf=0.90 cqs=55 imagens_ocr=0
+2026-10-07 11:45:14,943 INFO HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-07 11:45:14,955 INFO Atend 1-1584135-0 -> concluir=True conf=1.00 cqs=55 imagens_ocr=0
+2026-10-07 11:45:17,929 INFO HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-07 11:45:17,940 INFO Atend 1-1584412-0 -> concluir=True conf=0.95 cqs=64 imagens_ocr=0
+2026-10-07 11:45:17,971 INFO Ciclo ok: 10 avaliados, 0 erros, 36830/1593 tokens
+2026-10-07 11:57:36,341 ERROR Falha no ciclo
+Traceback (most recent call last):
+  File "C:\Users\alex\Documents\Python\agente_conclusao\agente.py", line 683, in main
+    client = criar_client(cfg, args.usuario)
+  File "C:\Users\alex\Documents\Python\agente_conclusao\agente.py", line 386, in criar_client
+    chave = os.environ[cfg["agente"]["api_key_env"]]
+            ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen os>", line 709, in __getitem__
+KeyError: 'OPENAI_API_KEY'
+2026-10-07 11:59:06,936 INFO Usando a chave de IA de 'alex' (openai / gpt-4.1-mini)
+2026-10-07 11:59:07,761 INFO Limite deste ciclo: 10 avaliações
+2026-10-07 11:59:07,903 INFO 40 candidatos encontrados
+2026-10-07 11:59:07,940 INFO 33 tipos de CQS carregados
+2026-10-07 11:59:08,380 WARNING OCR desativado (Tesseract/pytesseract indisponível): tesseract is not installed or it's not in your PATH. See README file for more information.
+2026-10-07 11:59:12,314 INFO Atend 1-360252-0: pasta do cliente não encontrada (sem link nas iterações e nome 'Bio-Hes Distribuidora' não bate com nenhuma pasta; use [pastas_clientes])
+2026-10-07 11:59:13,494 INFO Atend 1-1578976-0: pasta do cliente não encontrada (sem link nas iterações e nome 'Bio-Hes Distribuidora' não bate com nenhuma pasta; use [pastas_clientes])
+2026-10-07 11:59:14,151 INFO Atend 1-1565008-0: pasta do cliente não encontrada (sem link nas iterações e nome 'Bio-Hes Distribuidora' não bate com nenhuma pasta; use [pastas_clientes])
+2026-10-07 11:59:17,022 INFO HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-07 11:59:17,034 INFO Atend 1-1584430-0 -> concluir=True conf=0.95 cqs=65 imagens_ocr=0
+2026-10-07 11:59:19,852 INFO HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-07 11:59:19,858 INFO Atend 1-1584469-0 -> concluir=True conf=0.95 cqs=55 imagens_ocr=0
+2026-10-07 11:59:21,765 INFO HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-07 11:59:21,772 INFO Atend 1-1584476-0 -> concluir=True conf=0.95 cqs=54 imagens_ocr=0
+2026-10-07 11:59:21,789 INFO Atend 1-1584477-0: pasta do cliente não encontrada (sem link nas iterações e nome 'Bio-Hes Distribuidora' não bate com nenhuma pasta; use [pastas_clientes])
+2026-10-07 11:59:23,776 INFO HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-07 11:59:23,780 INFO Atend 1-1584477-0 -> concluir=True conf=0.90 cqs=55 imagens_ocr=0
+2026-10-07 11:59:25,566 INFO HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-07 11:59:25,591 INFO Atend 1-1584478-0 -> concluir=True conf=0.90 cqs=54 imagens_ocr=0
+2026-10-07 11:59:27,385 INFO HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-07 11:59:27,412 INFO Atend 1-1566050-0 -> concluir=True conf=0.90 cqs=54 imagens_ocr=0
+2026-10-07 11:59:29,511 INFO HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-07 11:59:29,535 INFO Atend 1-1591307-0 -> concluir=True conf=0.95 cqs=55 imagens_ocr=0
+2026-10-07 11:59:32,583 INFO HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-07 11:59:32,607 INFO Atend 1-1591314-0 -> concluir=True conf=0.90 cqs=54 imagens_ocr=0
+2026-10-07 11:59:32,741 INFO Atend 1-1591315-0: pasta do cliente não encontrada (sem link nas iterações e nome 'HI.TOP Industria química' não bate com nenhuma pasta; use [pastas_clientes])
+2026-10-07 11:59:35,693 INFO HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-07 11:59:35,719 INFO Atend 1-1591315-0 -> concluir=False conf=0.90 cqs=- imagens_ocr=0
+2026-10-07 11:59:37,780 INFO HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-07 11:59:37,804 INFO Atend 1-1591325-0 -> concluir=True conf=0.90 cqs=54 imagens_ocr=0
+2026-10-07 11:59:37,870 INFO Ciclo ok: 10 avaliados, 0 erros, 30407/1493 tokens
+2026-10-07 12:26:44,157 INFO Usando a chave de IA de 'alex' (openai / gpt-4.1-mini)
+2026-10-07 12:26:44,817 INFO Limite deste ciclo: 10 avaliações
+2026-10-07 12:26:44,989 INFO 40 candidatos encontrados
+2026-10-07 12:26:45,027 INFO 33 tipos de CQS carregados
+2026-10-07 12:26:52,411 INFO Atend 1-360252-0: pasta do cliente não encontrada (sem link nas iterações e nome 'Bio-Hes Distribuidora' não bate com nenhuma pasta; use [pastas_clientes])
+2026-10-07 12:26:55,921 INFO Atend 1-1578976-0: pasta do cliente não encontrada (sem link nas iterações e nome 'Bio-Hes Distribuidora' não bate com nenhuma pasta; use [pastas_clientes])
+2026-10-07 12:26:57,259 INFO Atend 1-1565008-0: pasta do cliente não encontrada (sem link nas iterações e nome 'Bio-Hes Distribuidora' não bate com nenhuma pasta; use [pastas_clientes])
+2026-10-07 12:26:58,616 INFO Atend 1-1584477-0: pasta do cliente não encontrada (sem link nas iterações e nome 'Bio-Hes Distribuidora' não bate com nenhuma pasta; use [pastas_clientes])
+2026-10-07 12:26:59,331 INFO Atend 1-1591315-0: pasta do cliente não encontrada (sem link nas iterações e nome 'HI.TOP Industria química' não bate com nenhuma pasta; use [pastas_clientes])
+2026-10-07 12:27:03,621 INFO HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-07 12:27:03,655 INFO Atend 1-1591332-0 -> concluir=True conf=1.00 cqs=55 imagens_ocr=0
+2026-10-07 12:27:05,977 INFO HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-07 12:27:05,987 INFO Atend 1-1591341-0 -> concluir=True conf=0.95 cqs=55 imagens_ocr=0
+2026-10-07 12:27:06,035 INFO Atend 1-9316787-0: pasta do cliente não encontrada (sem link nas iterações e nome 'Distribuidora Oba Rio' não bate com nenhuma pasta; use [pastas_clientes])
+2026-10-07 12:27:08,400 INFO HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-07 12:27:08,429 INFO Atend 1-9316787-0 -> concluir=True conf=0.90 cqs=55 imagens_ocr=0
+2026-10-07 12:27:08,492 WARNING Fichas: pasta ambígua para 'RPM Auto Peças' (Rap Autopecas, M&BAutoPecas); use [pastas_clientes] no config.ini
+2026-10-07 12:27:08,492 INFO Atend 1-9316819-0: pasta do cliente não encontrada (sem link nas iterações e nome 'RPM Auto Peças' não bate com nenhuma pasta; use [pastas_clientes])
+2026-10-07 12:27:08,494 WARNING Fichas: pasta ambígua para 'RPM Auto Peças' (Rap Autopecas, M&BAutoPecas); use [pastas_clientes] no config.ini
+2026-10-07 12:27:10,698 INFO HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-07 12:27:10,728 INFO Atend 1-9316819-0 -> concluir=True conf=0.90 cqs=54 imagens_ocr=0
+2026-10-07 12:27:13,944 INFO HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-07 12:27:13,961 INFO Atend 1-9316830-0 -> concluir=True conf=0.90 cqs=55 imagens_ocr=1
+2026-10-07 12:27:14,722 INFO Atend 1-9316831-0: pasta do cliente não encontrada (sem link nas iterações e nome 'GET Distribuidora Matriz' não bate com nenhuma pasta; use [pastas_clientes])
+2026-10-07 12:27:23,631 INFO HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-07 12:27:23,662 INFO Atend 1-9316831-0 -> concluir=True conf=0.90 cqs=55 imagens_ocr=2
+2026-10-07 12:27:26,545 INFO HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-07 12:27:26,572 INFO Atend 1-1566121-0 -> concluir=True conf=0.95 cqs=54 imagens_ocr=1
+2026-10-07 12:27:26,715 INFO Atend 1-1566123-0: pasta do cliente não encontrada (sem link nas iterações e nome 'Sandway - São João' não bate com nenhuma pasta; use [pastas_clientes])
+2026-10-07 12:27:30,119 INFO HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-07 12:27:30,145 INFO Atend 1-1566123-0 -> concluir=True conf=0.90 cqs=55 imagens_ocr=1
+2026-10-07 12:27:34,173 INFO HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-07 12:27:34,183 INFO Atend 1-1566125-0 -> concluir=True conf=0.90 cqs=54 imagens_ocr=1
+2026-10-07 12:27:34,225 INFO Atend 1-1566126-0: pasta do cliente não encontrada (sem link nas iterações e nome 'Sandway - São João' não bate com nenhuma pasta; use [pastas_clientes])
+2026-10-07 12:27:35,922 INFO HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-07 12:27:35,951 INFO Atend 1-1566126-0 -> concluir=True conf=1.00 cqs=55 imagens_ocr=0
+2026-10-07 12:27:36,007 INFO Ciclo ok: 10 avaliados, 0 erros, 31988/1398 tokens
+2026-10-07 13:29:23,914 INFO Usando a chave de IA de 'alex' (openai / gpt-4.1-mini)
+2026-10-07 13:29:26,011 INFO Limite deste ciclo: 10 avaliações
+2026-10-07 13:29:26,181 INFO 31 candidatos encontrados
+2026-10-07 13:29:26,187 INFO 33 tipos de CQS carregados
+2026-10-07 13:29:43,327 INFO HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-07 13:29:43,381 INFO Atend 1-5910493-0 -> concluir=True conf=0.95 cqs=54 imagens_ocr=1
+2026-10-07 13:29:52,373 INFO HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-07 13:29:52,409 INFO Atend 1-5910573-0 -> concluir=True conf=0.90 cqs=54 imagens_ocr=3
+2026-10-07 13:29:55,073 INFO HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-07 13:29:55,149 INFO Atend 1-1559749-0 -> concluir=True conf=0.90 cqs=54 imagens_ocr=0
+2026-10-07 13:29:57,564 INFO Atend 1-360252-0: pasta do cliente não encontrada (sem link nas iterações e nome 'Bio-Hes Distribuidora' não bate com nenhuma pasta; use [pastas_clientes])
+2026-10-07 13:30:10,575 INFO HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-07 13:30:10,585 INFO Atend 1-360252-0 -> concluir=False conf=0.90 cqs=- imagens_ocr=5
+2026-10-07 13:30:11,698 INFO Atend 1-1578976-0: pasta do cliente não encontrada (sem link nas iterações e nome 'Bio-Hes Distribuidora' não bate com nenhuma pasta; use [pastas_clientes])
+2026-10-07 13:30:16,185 INFO HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-07 13:30:16,202 INFO Atend 1-1578976-0 -> concluir=True conf=0.95 cqs=54 imagens_ocr=3
+2026-10-07 13:30:22,893 INFO HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-07 13:30:22,923 INFO Atend 1-1579145-0 -> concluir=True conf=0.95 cqs=54 imagens_ocr=3
+2026-10-07 13:30:25,830 INFO HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-07 13:30:25,862 INFO Atend 1-9315226-0 -> concluir=False conf=0.90 cqs=- imagens_ocr=0
+2026-10-07 13:30:25,907 INFO Atend 1-1565008-0: pasta do cliente não encontrada (sem link nas iterações e nome 'Bio-Hes Distribuidora' não bate com nenhuma pasta; use [pastas_clientes])
+2026-10-07 13:30:28,348 INFO HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-07 13:30:28,381 INFO Atend 1-1565008-0 -> concluir=True conf=0.95 cqs=54 imagens_ocr=0
+2026-10-07 13:30:28,452 INFO Atend 1-9316542-0: pasta do cliente não encontrada (sem link nas iterações e nome 'Distribuidora Oba Rio' não bate com nenhuma pasta; use [pastas_clientes])
+2026-10-07 13:30:31,494 INFO HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-07 13:30:31,504 INFO Atend 1-9316542-0 -> concluir=True conf=0.90 cqs=54 imagens_ocr=1
+2026-10-07 13:30:34,165 INFO HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-07 13:30:34,182 INFO Atend 1-1584135-0 -> concluir=True conf=0.95 cqs=54 imagens_ocr=0
+2026-10-07 13:30:34,223 INFO Ciclo ok: 10 avaliados, 0 erros, 39842/1756 tokens
+2026-10-07 14:11:46,773 INFO Usando a chave de IA de 'alex' (openai / gpt-4.1-mini)
+2026-10-07 14:11:47,860 INFO Limite deste ciclo: 10 avaliações
+2026-10-07 14:11:48,022 INFO 22 candidatos encontrados
+2026-10-07 14:11:48,039 INFO 32 tipos de CQS carregados
+2026-10-07 14:11:54,486 INFO Atend 1-1579147-0: pasta do cliente não encontrada (sem link nas iterações e nome 'HI.TOP Industria química' não bate com nenhuma pasta; use [pastas_clientes])
+2026-10-07 14:12:01,754 INFO HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-07 14:12:01,777 INFO Atend 1-1579147-0 -> concluir=True conf=0.90 cqs=55 imagens_ocr=3
+2026-10-07 14:12:04,358 INFO HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-07 14:12:04,390 INFO Atend 1-1584412-0 -> concluir=True conf=1.00 cqs=55 imagens_ocr=0
+2026-10-07 14:12:07,118 INFO HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-07 14:12:07,148 INFO Atend 1-1584430-0 -> concluir=True conf=0.95 cqs=65 imagens_ocr=0
+2026-10-07 14:12:12,040 INFO HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-07 14:12:12,054 INFO Atend 1-1584469-0 -> concluir=True conf=0.95 cqs=54 imagens_ocr=1
+2026-10-07 14:12:14,506 INFO HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-07 14:12:14,517 INFO Atend 1-1584476-0 -> concluir=True conf=0.95 cqs=54 imagens_ocr=0
+2026-10-07 14:12:14,555 INFO Atend 1-1584477-0: pasta do cliente não encontrada (sem link nas iterações e nome 'Bio-Hes Distribuidora' não bate com nenhuma pasta; use [pastas_clientes])
+2026-10-07 14:12:17,516 INFO HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-07 14:12:17,548 INFO Atend 1-1584477-0 -> concluir=True conf=0.95 cqs=55 imagens_ocr=0
+2026-10-07 14:12:20,382 INFO HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-07 14:12:20,409 INFO Atend 1-1584478-0 -> concluir=True conf=0.90 cqs=54 imagens_ocr=0
+2026-10-07 14:12:23,130 INFO HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-07 14:12:23,149 INFO Atend 1-1566050-0 -> concluir=True conf=0.95 cqs=54 imagens_ocr=1
+2026-10-07 14:12:25,830 INFO HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-07 14:12:25,865 INFO Atend 1-1591307-0 -> concluir=True conf=1.00 cqs=55 imagens_ocr=0
+2026-10-07 14:12:28,031 INFO HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-07 14:12:28,048 INFO Atend 1-1591314-0 -> concluir=True conf=0.90 cqs=55 imagens_ocr=0
+2026-10-07 14:12:28,072 INFO Ciclo ok: 10 avaliados, 0 erros, 36170/1564 tokens
+2026-10-07 14:26:59,742 INFO Usando a chave de IA de 'alex' (openai / gpt-4.1-mini)
+2026-10-07 14:27:00,627 INFO Limite deste ciclo: 10 avaliações
+2026-10-07 14:27:00,754 INFO 12 candidatos encontrados
+2026-10-07 14:27:00,809 INFO 32 tipos de CQS carregados
+2026-10-07 14:27:06,493 INFO Atend 1-1591315-0: pasta do cliente não encontrada (sem link nas iterações e nome 'HI.TOP Industria química' não bate com nenhuma pasta; use [pastas_clientes])
+2026-10-07 14:27:06,903 INFO Atend 1-1566127-0: pasta do cliente não encontrada (sem link nas iterações e nome 'Bot Comércio de Roupas' não bate com nenhuma pasta; use [pastas_clientes])
+2026-10-07 14:27:09,843 INFO HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-07 14:27:09,910 INFO Atend 1-1566127-0 -> concluir=True conf=0.90 cqs=54 imagens_ocr=0
+2026-10-07 14:27:12,564 INFO HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-10-07 14:27:12,592 INFO Atend 1-1591325-0 -> concluir=True conf=0.90 cqs=54 imagens_ocr=0
+2026-10-07 14:27:12,642 INFO Ciclo ok: 2 avaliados, 0 erros, 6767/288 tokens
+2026-10-07 14:30:54,677 INFO Usando a chave de IA de 'alex' (openai / gpt-4.1-mini)
+2026-10-07 14:30:55,515 INFO Limite deste ciclo: 10 avaliações
+2026-10-07 14:30:55,584 INFO 10 candidatos encontrados
+2026-10-07 14:30:55,643 INFO 32 tipos de CQS carregados
+2026-10-07 14:31:01,344 INFO Atend 1-1591315-0: pasta do cliente não encontrada (sem link nas iterações e nome 'HI.TOP Industria química' não bate com nenhuma pasta; use [pastas_clientes])
+2026-10-07 14:31:01,747 INFO Ciclo ok: 0 avaliados, 0 erros, 0/0 tokens
+2026-10-07 14:33:57,458 INFO Usando a chave de IA de 'alex' (openai / gpt-4.1-mini)
+2026-10-07 14:33:58,085 INFO Limite deste ciclo: 10 avaliações
+2026-10-07 14:33:58,238 INFO 10 candidatos encontrados
+2026-10-07 14:33:58,286 INFO 32 tipos de CQS carregados
+2026-10-07 14:34:02,140 INFO Atend 1-1591315-0: pasta do cliente não encontrada (sem link nas iterações e nome 'HI.TOP Industria química' não bate com nenhuma pasta; use [pastas_clientes])
+2026-10-07 14:34:02,304 INFO Ciclo ok: 0 avaliados, 0 erros, 0/0 tokens

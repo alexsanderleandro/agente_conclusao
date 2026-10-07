@@ -187,7 +187,7 @@ con = sqlite3.connect(DB)
 for _col in ("resumo TEXT", "cqs_cod TEXT", "cqs_nome TEXT", "cqs_descricao TEXT", "cqs_pontos TEXT",
              "cqs_ok INTEGER DEFAULT 0", "motivo TEXT", "decidido_em TEXT",
              "fichas TEXT", "qtd_fichas INTEGER DEFAULT 0", "audios TEXT", "qtd_audios INTEGER DEFAULT 0",
-             "na_fila INTEGER DEFAULT 1", "cqs_secundarios TEXT", "cqs_sec_ok INTEGER DEFAULT 0"):  # bancos de versões antigas
+             "na_fila INTEGER DEFAULT 1", "cqs_secundarios TEXT", "cqs_sec_ok INTEGER DEFAULT 0", "ciclo_inicio TEXT"):  # bancos de versões antigas
     try:
         con.execute(f"ALTER TABLE avaliacoes ADD COLUMN {_col}")
         con.commit()
@@ -199,8 +199,11 @@ try:
         con,
     )
 except Exception:
-    st.info("Ainda não há avaliações. Rode o agente (agente.py) ao menos uma vez.")
-    st.stop()
+    df = None
+_sem_dados = df is None or df.empty
+if df is None:   # banco ainda vazio: segue até o botão "Buscar próximos" para poder fazer a 1ª busca
+    df = pd.DataFrame(columns=["atendimento_id", "cliente", "assunto", "analista", "pode_concluir", "confianca",
+                               "cqs_cod", "cqs_secundarios", "resumo", "status", "avaliado_em", "na_fila"])
 
 
 @st.cache_data(ttl=120, show_spinner=False)
@@ -250,7 +253,7 @@ def buscar_proximos(n):
     avaliados, erros = int(ok.group(1)), int(ok.group(2))
     if avaliados == 0 and erros == 0:
         return "info", "Nada novo para avaliar: todos os atendimentos encontrados já foram avaliados."
-    msg = f"{avaliados} atendimentos avaliados."
+    msg = f"{avaliados} atendimentos avaliados (limite desta busca: {int(n)})."
     return ("aviso", msg + f" {erros} com erro (veja o agente.log).") if erros else ("ok", msg)
 
 
@@ -278,26 +281,59 @@ _bt1, _bt2 = st.columns([1, 3])
 if _bt1.button(f"🔄 Buscar próximos {int(_novo_max)}", type="primary"):
     with st.spinner(f"Avaliando até {int(_novo_max)} atendimentos... (pode levar alguns minutos)"):
         st.session_state["ultima_busca"] = buscar_proximos(_novo_max)
+        st.session_state["exibir"] = "ultima"
     fila_atual_erp.clear()   # relê a fila do ERP depois do ciclo
     st.rerun()
 _bt2.caption("Roda um ciclo do agente agora: avalia os próximos atendimentos ainda não avaliados "
              "(consome crédito da sua chave de IA).")
+if _sem_dados:
+    st.info("Ainda não há avaliações. Clique em **Buscar próximos** para fazer a primeira.")
+    st.stop()
 
 # ---- filtros ----
-f1, f2, f3 = st.columns(3)
+f0, f1, f2, f3 = st.columns([1.2, 1, 1, 1])
+_ultimo = df["ciclo_inicio"].dropna().max() if "ciclo_inicio" in df and df["ciclo_inicio"].notna().any() else None
+_n_ult = int((df["ciclo_inicio"] == _ultimo).sum()) if _ultimo else 0
+_opts = [f"Última busca ({_n_ult})", "Todos da fila"]
+exibir = f0.radio("Exibir", _opts, horizontal=True,
+                  index=0 if st.session_state.pop("exibir", None) == "ultima" else 1,
+                  help="Última busca = só os avaliados no último 'Buscar próximos'. "
+                       "Todos da fila = tudo que já foi avaliado e continua aguardando revisão no ERP.")
 status = f1.multiselect("Status", ["pendente", "aceita", "rejeitada"], default=["pendente"])
 _analistas = sorted(df.analista.dropna().astype(str).unique())
 analistas_sel = f2.multiselect("Analista", _analistas, placeholder="Todos")
 so_concluir = f3.checkbox("Só os que podem concluir", value=True)
 
 v = df[df.status.isin(status)]
+if exibir.startswith("Última") and _ultimo:
+    v = v[v["ciclo_inicio"] == _ultimo]
 if analistas_sel:
     v = v[v.analista.isin(analistas_sel)]
 if so_concluir:
     v = v[v.pode_concluir == 1]
 v = v.sort_values("confianca", ascending=False)
 
-st.markdown(f"**Na lista atual:** {len(v)} registros (de {len(df)} avaliados)")
+_nao_avaliados = len(_fila - set(df.atendimento_id)) if _fila is not None else 0
+st.markdown(f"**Na lista atual:** {len(v)} registros · fila do ERP: {len(_fila) if _fila is not None else '?'}"
+            f" · avaliados: {len(df)} · ainda não avaliados: {_nao_avaliados}")
+if len(v) < len(df):
+    _motivos = []
+    _base = df
+    if exibir.startswith("Última") and _ultimo:
+        _n = int((_base["ciclo_inicio"] != _ultimo).sum()); _base = _base[_base["ciclo_inicio"] == _ultimo]
+        if _n: _motivos.append(f"{_n} de buscas anteriores (escolha **Todos da fila**)")
+    _n = int((~_base.status.isin(status)).sum()); _base = _base[_base.status.isin(status)]
+    if _n: _motivos.append(f"{_n} com status fora do filtro (já aceitos/rejeitados)")
+    if analistas_sel:
+        _n = int((~_base.analista.isin(analistas_sel)).sum()); _base = _base[_base.analista.isin(analistas_sel)]
+        if _n: _motivos.append(f"{_n} de outros analistas")
+    if so_concluir:
+        _n = int((_base.pode_concluir != 1).sum())
+        if _n: _motivos.append(f"{_n} avaliados como **Não** (desmarque *Só os que podem concluir*)")
+    if _motivos:
+        st.caption("Ocultos pelos filtros: " + " · ".join(_motivos))
+if _nao_avaliados:
+    st.caption(f"{_nao_avaliados} atendimento(s) da fila ainda não foram avaliados: use **Buscar próximos**.")
 
 cols = ["atendimento_id", "cliente", "assunto", "analista", "pode_concluir",
         "confianca", "cqs_cod", "cqs_sec", "resumo", "status", "avaliado_em"]
