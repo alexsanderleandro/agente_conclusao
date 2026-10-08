@@ -14,6 +14,7 @@ import pyodbc
 import streamlit as st
 
 import cripto
+import migracoes
 import llm
 from agendamento import NOMES, proxima_execucao
 
@@ -67,11 +68,13 @@ def validar_login(usuario, senha):
 # ---- login: nada abaixo disso roda sem usuário logado ----
 if not st.session_state.get("usuario_logado"):
     import tema_login
-    st.markdown(tema_login.css("c"), unsafe_allow_html=True)
+    # imagem de fundo: assets/login_fundo.(svg|png|jpg|jpeg|webp) - a primeira que existir
+    _fundo = next((BASE / "assets" / f"login_fundo.{_ext}" for _ext in ("svg", "png", "jpg", "jpeg", "webp")
+                   if (BASE / "assets" / f"login_fundo.{_ext}").is_file()), None)
+    st.markdown(tema_login.css("c", _fundo), unsafe_allow_html=True)
     st.title("Revisão de conclusão de atendimentos")
     _, _col, _ = st.columns([1, 1, 1])
     with _col:
-        st.subheader("Login")
         with st.form("login"):
             _usuario = st.text_input("Usuário", value=_ler_ultimo_usuario())
             _senha = st.text_input("Senha", type="password")
@@ -96,7 +99,9 @@ if not st.session_state.get("usuario_logado"):
     st.stop()
 
 _t1, _t2 = st.columns([6, 1])
-_t1.title("Revisão de conclusão de atendimentos")
+# título 40% menor que o padrão do st.title (2.75rem -> 1.65rem)
+_t1.markdown('<h1 style="font-size:1.65rem;padding:0.4rem 0 0.2rem">Revisão de conclusão de atendimentos</h1>',
+             unsafe_allow_html=True)
 _t2.caption(f"👤 {st.session_state['usuario_logado']}")
 if _t2.button("Sair"):
     st.session_state.clear()
@@ -331,12 +336,14 @@ con = sqlite3.connect(DB)
 for _col in ("resumo TEXT", "cqs_cod TEXT", "cqs_nome TEXT", "cqs_descricao TEXT", "cqs_pontos TEXT",
              "cqs_ok INTEGER DEFAULT 0", "motivo TEXT", "decidido_em TEXT",
              "fichas TEXT", "qtd_fichas INTEGER DEFAULT 0", "audios TEXT", "qtd_audios INTEGER DEFAULT 0",
-             "na_fila INTEGER DEFAULT 1", "cqs_secundarios TEXT", "cqs_sec_ok INTEGER DEFAULT 0", "ciclo_inicio TEXT"):  # bancos de versões antigas
+             "na_fila INTEGER DEFAULT 1", "cqs_secundarios TEXT", "cqs_sec_ok INTEGER DEFAULT 0", "ciclo_inicio TEXT",
+             "status_cqs TEXT", "cqs_correto TEXT", "motivo_cqs TEXT", "decidido_por TEXT"):  # bancos de versões antigas
     try:
         con.execute(f"ALTER TABLE avaliacoes ADD COLUMN {_col}")
         con.commit()
     except sqlite3.OperationalError:
         pass
+migracoes.migrar(con)   # revisões antigas -> análise e CQS separados
 try:
     df = pd.read_sql(
         "SELECT * FROM avaliacoes WHERE id IN (SELECT MAX(id) FROM avaliacoes GROUP BY atendimento_id)",
@@ -347,26 +354,58 @@ except Exception:
 _sem_dados = df is None or df.empty
 if df is None:   # banco ainda vazio: segue até o botão "Buscar próximos" para poder fazer a 1ª busca
     df = pd.DataFrame(columns=["atendimento_id", "cliente", "assunto", "analista", "pode_concluir", "confianca",
-                               "cqs_cod", "cqs_secundarios", "resumo", "status", "avaliado_em", "na_fila"])
+                               "cqs_cod", "cqs_secundarios", "resumo", "status", "avaliado_em", "na_fila",
+                               "status_cqs", "cqs_correto", "motivo_cqs", "decidido_por"])
+
+# análise (concluir sim/não) e CQS são avaliados separadamente.
+# CQS só se aplica quando a IA disse "Sim", sugeriu um CQS e a análise não foi rejeitada.
+df["cqs_aplica"] = (df.pode_concluir == 1) & df.cqs_cod.fillna("").astype(str).ne("") & (df.status != "rejeitada")
+df["st_cqs"] = df.status_cqs.where(df.status_cqs.notna(), "pendente").where(df.cqs_aplica, "-")
+df["status_geral"] = "aceita"
+df.loc[(df.status == "rejeitada") | (df.st_cqs == "rejeitada"), "status_geral"] = "rejeitada"
+df.loc[(df.status == "pendente") | (df.st_cqs == "pendente"), "status_geral"] = "pendente"
+
+
+@st.cache_data(ttl=600, show_spinner=False)
+def catalogo_cqs():
+    """[(código, nome)] dos CQS permitidos como principal ([cqs] principal); [] se não conseguir ler o ERP."""
+    try:
+        conn = pyodbc.connect(cfg["banco"]["conn_string"], timeout=15)
+        try:
+            cur = conn.cursor()
+            cur.execute(cfg["queries"]["cqs_tipos"])
+            cols = [c[0].lower() for c in cur.description]
+            rows = [dict(zip(cols, x)) for x in cur.fetchall()]
+        finally:
+            conn.close()
+    except Exception:
+        return []
+    perm = {c.strip() for c in cfg.get("cqs", "principal", fallback="").split(",") if c.strip()}
+    sec = {c.strip() for c in cfg.get("cqs", "secundario", fallback="").split(",") if c.strip()}
+    perm |= sec
+    out = [(str(x["codtiporegistro"]), str(x.get("nometiporegistro") or "")) for x in rows]
+    return [c for c in out if not perm or c[0] in perm]
 
 
 @st.cache_data(ttl=120, show_spinner=False)
 def fila_atual_erp():
-    """Atendimentos que estão AGORA na fila do ERP (Situacao=0 e última iteração = 26),
-    pela mesma query 'candidatos' do agente. None se não conseguir consultar."""
+    """(ids, hora da consulta) dos atendimentos que estão AGORA na fila do ERP (Situacao=0 e
+    última iteração = 26), pela mesma query 'candidatos' do agente. Exceção se não conseguir consultar."""
     chave = [c.strip().lower() for c in cfg["queries"]["chave_colunas"].split(",")]
     conn = pyodbc.connect(cfg["banco"]["conn_string"], timeout=15)
     try:
         cur = conn.cursor()
         cur.execute(cfg["queries"]["candidatos"])
         cols = [c[0].lower() for c in cur.description]
-        return {"-".join(str(dict(zip(cols, r))[c]) for c in chave) for r in cur.fetchall()}
+        ids = {"-".join(str(dict(zip(cols, r))[c]) for c in chave) for r in cur.fetchall()}
+        return ids, datetime.now().strftime("%H:%M:%S")
     finally:
         conn.close()
 
 
+_fila_em = None
 try:
-    _fila = fila_atual_erp()
+    _fila, _fila_em = fila_atual_erp()
     _fonte_fila = "ERP agora"
 except Exception as e:
     _fila = set(df.loc[df.get("na_fila", 1) == 1, "atendimento_id"]) if "na_fila" in df else None
@@ -406,19 +445,28 @@ if st.session_state.get("ultima_busca"):
     {"ok": st.success, "info": st.info, "aviso": st.warning}.get(_tipo, st.error)(_msg)
 
 # ---- métricas ----
-aceitas = (df.status == "aceita").sum()
-rejeitadas = (df.status == "rejeitada").sum()
+aceitas = int((df.status == "aceita").sum())
+rejeitadas = int((df.status == "rejeitada").sum())
+cqs_ok = int((df.st_cqs == "aceita").sum())
+cqs_err = int((df.st_cqs == "rejeitada").sum())
 c0, c1, c2, c3, c4, c5 = st.columns(6)
 try:
     _r = con.execute("SELECT candidatos FROM execucoes ORDER BY id DESC LIMIT 1").fetchone()
 except sqlite3.Error:
     _r = None
 c0.metric("Encontrados no ERP", len(_fila) if _fila is not None else (_r[0] if _r else len(df)),
-          help="Atendimentos aguardando revisão achados na última execução do agente")
+          help=f"Atendimentos aguardando revisão na fila do ERP (consultado às {_fila_em})" if _fila_em
+          else f"Atendimentos aguardando revisão (fonte: {_fonte_fila})")
+# relê só a fila do ERP (sem rodar o agente): o resultado fica em cache por 2 minutos
+c0.button("Atualizar", key="atualizar_fila", icon=":material/refresh:", type="tertiary",
+          on_click=fila_atual_erp.clear, help="Consulta o ERP agora para ver se entraram ou saíram atendimentos da fila")
 c1.metric("Pendentes (podem concluir)", int(((df.status == "pendente") & (df.pode_concluir == 1)).sum()))
-c2.metric("Aceitas", int(aceitas))
-c3.metric("Rejeitadas", int(rejeitadas))
-c4.metric("Taxa de acerto", f"{aceitas / (aceitas + rejeitadas):.0%}" if aceitas + rejeitadas else "-")
+c2.metric("Acerto da análise", f"{aceitas / (aceitas + rejeitadas):.0%}" if aceitas + rejeitadas else "-",
+          help=f"Concluir sim/não: {aceitas} corretas · {rejeitadas} erradas")
+c3.metric("Acerto do CQS", f"{cqs_ok / (cqs_ok + cqs_err):.0%}" if cqs_ok + cqs_err else "-",
+          help=f"CQS sugerido: {cqs_ok} corretos · {cqs_err} errados")
+c4.metric("Aguardando sua revisão", int((df.status_geral == "pendente").sum()),
+          help="Análise ou CQS ainda sem avaliação")
 c5.metric("Não autorizados a concluir", int((df.pode_concluir == 0).sum()))
 
 _bt1, _bt2 = st.columns([1, 3])
@@ -460,12 +508,13 @@ exibir = f0.radio("Exibir", _opts, horizontal=True,
                   index=0 if st.session_state.pop("exibir", None) == "ultima" else 1,
                   help="Última busca = só os avaliados no último 'Buscar próximos'. "
                        "Todos da fila = tudo que já foi avaliado e continua aguardando revisão no ERP.")
-status = f1.multiselect("Status", ["pendente", "aceita", "rejeitada"], default=["pendente"])
+status = f1.multiselect("Revisão", ["pendente", "aceita", "rejeitada"], default=["pendente"],
+                        help="pendente = falta avaliar a análise ou o CQS · rejeitada = errou a análise ou o CQS")
 _analistas = sorted(df.analista.dropna().astype(str).unique())
 analistas_sel = f2.multiselect("Analista", _analistas, placeholder="Todos")
 so_concluir = f3.checkbox("Só os que podem concluir", value=True)
 
-v = df[df.status.isin(status)]
+v = df[df.status_geral.isin(status)]
 if exibir.startswith("Última") and _ultimo:
     v = v[v["ciclo_inicio"] == _ultimo]
 if analistas_sel:
@@ -483,8 +532,8 @@ if len(v) < len(df):
     if exibir.startswith("Última") and _ultimo:
         _n = int((_base["ciclo_inicio"] != _ultimo).sum()); _base = _base[_base["ciclo_inicio"] == _ultimo]
         if _n: _motivos.append(f"{_n} de buscas anteriores (escolha **Todos da fila**)")
-    _n = int((~_base.status.isin(status)).sum()); _base = _base[_base.status.isin(status)]
-    if _n: _motivos.append(f"{_n} com status fora do filtro (já aceitos/rejeitados)")
+    _n = int((~_base.status_geral.isin(status)).sum()); _base = _base[_base.status_geral.isin(status)]
+    if _n: _motivos.append(f"{_n} fora do filtro de revisão (já revisados)")
     if analistas_sel:
         _n = int((~_base.analista.isin(analistas_sel)).sum()); _base = _base[_base.analista.isin(analistas_sel)]
         if _n: _motivos.append(f"{_n} de outros analistas")
@@ -497,7 +546,7 @@ if _nao_avaliados:
     st.caption(f"{_nao_avaliados} atendimento(s) da fila ainda não foram avaliados: use **Buscar próximos**.")
 
 cols = ["atendimento_id", "cliente", "assunto", "analista", "pode_concluir",
-        "confianca", "cqs_cod", "cqs_sec", "resumo", "status", "avaliado_em"]
+        "confianca", "status", "cqs_cod", "st_cqs", "cqs_sec", "resumo", "decidido_por", "avaliado_em"]
 
 
 def _secs(js):
@@ -512,13 +561,17 @@ v = v.assign(cqs_sec=v.cqs_secundarios.map(
 vis = v[cols].copy()
 vis["pode_concluir"] = vis["pode_concluir"].map({1: "Sim", 0: "Não"})
 vis["cqs_cod"] = vis["cqs_cod"].fillna("")
+_ICON = {"pendente": "⏳ pendente", "aceita": "✅ correta", "rejeitada": "❌ errada", "-": ""}
+vis["status"] = vis["status"].map(lambda x: _ICON.get(x, x))
+vis["st_cqs"] = vis["st_cqs"].map(lambda x: _ICON.get(x, x).replace("correta", "correto").replace("errada", "errado"))
+vis["decidido_por"] = vis["decidido_por"].fillna("")
 vis = vis.rename(columns={
     "atendimento_id": "Atendimento", "cliente": "Cliente", "assunto": "Assunto",
     "analista": "Analista", "pode_concluir": "Pode concluir", "confianca": "Confiança",
     "cqs_cod": "CQS", "cqs_sec": "CQS secundário", "resumo": "Resumo",
-    "status": "Status", "avaliado_em": "Avaliado em"})
+    "status": "Análise", "st_cqs": "Status CQS", "decidido_por": "Revisado por", "avaliado_em": "Avaliado em"})
 sel = st.dataframe(vis, on_select="rerun", selection_mode="single-row",
-                   use_container_width=True, hide_index=True)
+                   width="stretch", hide_index=True)
 
 # ---- detalhe do registro marcado (aparece abaixo da lista) ----
 if sel.selection.rows:
@@ -544,25 +597,77 @@ if sel.selection.rows:
         st.write("**Áudios transcritos:** " + " · ".join(r.audios.splitlines()))
     if isinstance(r.pendencias, str) and r.pendencias:
         st.write(f"**Pendências:** {r.pendencias}")
-    motivo_ant = r.motivo if isinstance(r.motivo, str) else ""
-    motivo = st.text_input("Motivo / observação (a IA aprende com isso; obrigatório para rejeitar)",
-                           value=motivo_ant, key=f"motivo_{r.id}")
-    st.caption("Aceitar = concordo com a avaliação da IA · Rejeitar = discordo "
-               "(vale também para os 'Não': rejeitar significa que podia concluir).")
-    b1, b2, _ = st.columns([1, 1, 6])
-    for rotulo, novo, col in (("Aceitar", "aceita", b1), ("Rejeitar", "rejeitada", b2)):
-        if col.button(rotulo, key=f"{novo}_{r.id}"):
-            if novo == "rejeitada" and not motivo.strip():
-                st.warning("Escreva o motivo da rejeição para a IA aprender com ele.")
+    # ---- revisão em duas partes: análise (concluir sim/não) e CQS ----
+    st.divider()
+    _txt = lambda x: x if isinstance(x, str) else ""
+    _OPC = {"pendente": "⏳ Pendente", "aceita": "✅ Correta", "rejeitada": "❌ Errada"}
+    _ia_sim = int(r.pode_concluir) == 1
+    _tem_cqs = _ia_sim and bool(_txt(r.cqs_cod))
+    with st.form(f"rev_{r.id}"):
+        ca, cb = st.columns(2)
+        with ca:
+            st.markdown(f"**1 · Análise** — a IA disse: **{'Sim, pode concluir' if _ia_sim else 'Não pode concluir'}**")
+            dec_an = st.radio("A decisão de concluir está", list(_OPC), format_func=_OPC.get, horizontal=True,
+                              index=list(_OPC).index(r.status if r.status in _OPC else "pendente"),
+                              key=f"an_{r.id}")
+            mot_an = st.text_area("Motivo (obrigatório se errada)", _txt(r.motivo), height=90, key=f"mot_{r.id}",
+                                  help="Ex.: cliente ainda aguardava retorno; havia pendência na ficha...")
+        with cb:
+            if _tem_cqs:
+                st.markdown(f"**2 · CQS** — a IA sugeriu: **{r.cqs_cod} – {_txt(r.cqs_nome)}**"
+                            + (" (e secundários)" if _secs(r.cqs_secundarios) else ""))
+                _opc_cqs = {k: v.replace("Correta", "Correto").replace("Errada", "Errado") for k, v in _OPC.items()}
+                dec_cqs = st.radio("O CQS está", list(_opc_cqs), format_func=_opc_cqs.get, horizontal=True,
+                                   index=list(_opc_cqs).index(r.status_cqs if r.status_cqs in _opc_cqs else "pendente"),
+                                   key=f"cq_{r.id}",
+                                   help="Avalie o principal e os secundários. Se a análise estiver errada, "
+                                        "o CQS não é avaliado.")
             else:
-                con.execute("UPDATE avaliacoes SET status=?, motivo=?, decidido_em=? WHERE id=?",
-                            (novo, motivo.strip(), datetime.now().isoformat(timespec="seconds"), int(r.id)))
-                con.commit()
-                st.rerun()
+                dec_cqs = None
+                st.markdown("**2 · CQS** — " + ("a IA disse que não pode concluir: sem CQS para avaliar."
+                                                if not _ia_sim else "a IA não sugeriu CQS."))
+                if not _ia_sim:
+                    st.caption("Se a análise estiver errada (podia concluir), informe abaixo qual seria o CQS certo.")
+            _cat = catalogo_cqs()
+            _atual = _txt(r.cqs_correto)
+            if _cat:
+                _cods = [""] + [c for c, _ in _cat]
+                _nomes = dict(_cat)
+                cqs_cert = st.selectbox("CQS certo (se o sugerido estiver errado)", _cods,
+                                        index=_cods.index(_atual) if _atual in _cods else 0,
+                                        format_func=lambda c: f"{c} – {_nomes.get(c, '')}" if c else "—",
+                                        key=f"cc_{r.id}")
+            else:
+                cqs_cert = st.text_input("CQS certo (código, se o sugerido estiver errado)", _atual, key=f"cc_{r.id}")
+            mot_cqs = st.text_area("Motivo do CQS (obrigatório se errado)", _txt(r.motivo_cqs), height=68,
+                                   key=f"mcq_{r.id}",
+                                   help="Ex.: foi atendimento remoto, não in loco; secundário do analista X deveria ser 59")
+        salvar = st.form_submit_button("💾 Salvar revisão", type="primary")
+    if salvar:
+        _erros = []
+        if dec_an == "rejeitada" and not mot_an.strip():
+            _erros.append("Escreva o motivo da análise errada (a IA aprende com isso).")
+        if dec_an == "rejeitada" and _ia_sim:
+            dec_cqs = None          # não devia concluir: CQS não se avalia
+        if dec_cqs == "rejeitada" and not (mot_cqs.strip() or str(cqs_cert).strip()):
+            _erros.append("Informe o CQS certo ou o motivo do CQS errado.")
+        if dec_cqs == "aceita":
+            cqs_cert = ""
+        if _erros:
+            for _e in _erros:
+                st.warning(_e)
+        else:
+            con.execute("UPDATE avaliacoes SET status=?, motivo=?, status_cqs=?, cqs_correto=?, motivo_cqs=?, "
+                        "decidido_em=?, decidido_por=? WHERE id=?",
+                        (dec_an, mot_an.strip(), dec_cqs, str(cqs_cert).strip() or None, mot_cqs.strip(),
+                         datetime.now().isoformat(timespec="seconds"), USUARIO, int(r.id)))
+            con.commit()
+            fila_atual_erp.clear()   # o atendimento pode ter sido concluído no ERP: relê a fila
+            st.rerun()
 
 with st.expander("Últimas execuções"):
     try:
         st.dataframe(pd.read_sql("SELECT * FROM execucoes ORDER BY id DESC LIMIT 30", con),
-                     use_container_width=True, hide_index=True)
+                     width="stretch", hide_index=True)
     except Exception:
         st.write("Sem execuções registradas ainda.")

@@ -24,6 +24,7 @@ from pathlib import Path
 import pyodbc
 
 import cripto
+import migracoes
 import llm
 from audios import (Transcritor, audios_na_pasta, caminhos_no_texto, mapear_unidade,
                     pasta_cliente_pelos_links)
@@ -79,11 +80,13 @@ def init_sqlite(path):
                 "cqs_ok INTEGER DEFAULT 0", "motivo TEXT", "decidido_em TEXT",
                 "fichas TEXT", "qtd_fichas INTEGER DEFAULT 0", "audios TEXT", "qtd_audios INTEGER DEFAULT 0",
                 "na_fila INTEGER DEFAULT 1", "cqs_versao TEXT", "cqs_secundarios TEXT",
-                "cqs_sec_ok INTEGER DEFAULT 0", "ciclo_inicio TEXT", "qtd_imagens INTEGER DEFAULT 0"):
+                "cqs_sec_ok INTEGER DEFAULT 0", "ciclo_inicio TEXT", "qtd_imagens INTEGER DEFAULT 0",
+                "status_cqs TEXT", "cqs_correto TEXT", "motivo_cqs TEXT", "decidido_por TEXT"):
         try:  # bancos criados antes do recurso CQS
             con.execute(f"ALTER TABLE avaliacoes ADD COLUMN {col}")
         except sqlite3.OperationalError:
             pass
+    migracoes.migrar(con)   # revisões antigas -> análise e CQS separados
     con.execute("CREATE INDEX IF NOT EXISTS ix_at ON avaliacoes(atendimento_id)")
     con.execute(
         """CREATE TABLE IF NOT EXISTS execucoes(
@@ -341,35 +344,65 @@ def montar_bloco_cqs(catalogo, principais=None, secundarios=None):
 
 
 def montar_exemplos(lite, cfg, prot=None, cqs_versao=None):
-    """Decisões recentes do analista (aceitou/rejeitou) para a IA calibrar o julgamento."""
+    """Revisões recentes do analista humano para a IA calibrar o julgamento.
+    A análise (concluir sim/não) e o CQS são avaliados separadamente pelo analista."""
     n = cfg.getint("agente", "exemplos_por_tipo", fallback=3)
     if n <= 0:
         return ""
+
+    def _p(cliente, *txts):
+        if not prot:
+            return txts
+        pr = prot.para_atendimento(cliente)
+        return tuple(pr.proteger(t) for t in txts)
+
+    blocos = []
+    # 1) análise
     linhas = []
-    for status, rotulo in (("rejeitada", "DISCORDOU"), ("aceita", "CONCORDOU")):
+    for status, rotulo in (("rejeitada", "DISCORDOU da decisão"), ("aceita", "CONCORDOU com a decisão")):
         rows = lite.execute(
-            "SELECT assunto, pode_concluir, cqs_cod, cqs_nome, resumo, motivo, cliente, cqs_versao FROM avaliacoes "
-            "WHERE status=? ORDER BY COALESCE(decidido_em, avaliado_em) DESC, id DESC LIMIT ?",
+            "SELECT assunto, pode_concluir, cqs_cod, cqs_nome, resumo, motivo, cliente, cqs_versao, status_cqs "
+            "FROM avaliacoes WHERE status=? ORDER BY COALESCE(decidido_em, avaliado_em) DESC, id DESC LIMIT ?",
             (status, n),
         ).fetchall()
-        for assunto, pode, cqs_cod, cqs_nome, resumo, motivo, cliente, versao in rows:
-            # CQS escolhido com o catálogo antigo não serve de exemplo para o catálogo novo
-            cqs = f" (CQS {cqs_cod} - {cqs_nome})" if cqs_cod and versao == cqs_versao else ""
-            if prot:
-                p = prot.para_atendimento(cliente)
-                assunto, resumo, motivo = p.proteger(assunto), p.proteger(resumo), p.proteger(motivo)
+        for assunto, pode, cqs_cod, cqs_nome, resumo, motivo, cliente, versao, st_cqs in rows:
+            # revisão antiga (antes da separação) julgava tudo junto: mostra o CQS para dar contexto
+            cqs = (f" (CQS {cqs_cod} - {cqs_nome})" if cqs_cod and versao == cqs_versao and st_cqs is None
+                   and status == "rejeitada" else "")
+            assunto, resumo, motivo = _p(cliente, assunto, resumo, motivo)
             linhas.append(
                 f'- Assunto "{limpar(assunto)[:80]}" | IA respondeu: {"Sim" if pode else "Não"}{cqs} | '
                 f'O analista {rotulo}. Motivo: {limpar(motivo) or "(sem motivo informado)"} | '
                 f'Resumo da IA: {limpar(resumo)[:300]}'
             )
-    if not linhas:
-        return ""
-    return (
-        "Exemplos reais de decisões do analista humano sobre avaliações suas anteriores. Use-os para "
-        "calibrar seu julgamento: onde ele DISCORDOU, evite repetir o mesmo erro; onde CONCORDOU, "
-        "mantenha o critério.\n" + "\n".join(linhas)
-    )
+    if linhas:
+        blocos.append(
+            "Exemplos reais da revisão do analista humano sobre a DECISÃO DE CONCLUIR (sim/não) em avaliações "
+            "suas anteriores. Onde ele DISCORDOU, evite repetir o erro; onde CONCORDOU, mantenha o critério.\n"
+            + "\n".join(linhas))
+    # 2) CQS (só exemplos do catálogo atual)
+    linhas = []
+    for status, rotulo in (("rejeitada", "ERRADO"), ("aceita", "CORRETO")):
+        rows = lite.execute(
+            "SELECT assunto, cqs_cod, cqs_nome, cqs_correto, motivo_cqs, resumo, cliente FROM avaliacoes "
+            "WHERE status_cqs=? AND (cqs_versao=? OR ? IS NULL) "
+            "ORDER BY COALESCE(decidido_em, avaliado_em) DESC, id DESC LIMIT ?",
+            (status, cqs_versao, cqs_versao, n),
+        ).fetchall()
+        for assunto, cod, nome, certo, motivo, resumo, cliente in rows:
+            assunto, motivo, resumo = _p(cliente, assunto, motivo, resumo)
+            extra = ""
+            if status == "rejeitada":
+                extra = (f" O correto era CQS {certo}." if certo else "") + \
+                        (f" Motivo: {limpar(motivo)}" if motivo else "")
+            linhas.append(f'- Assunto "{limpar(assunto)[:80]}" | IA sugeriu CQS {cod} - {nome} | '
+                          f'O analista disse: {rotulo}.{extra} | Resumo da IA: {limpar(resumo)[:200]}')
+    if linhas:
+        blocos.append(
+            "Exemplos reais da revisão do analista humano sobre o CQS que você sugeriu (avaliado separado da "
+            "decisão de concluir). Use-os para escolher o CQS: repita os acertos e corrija os erros.\n"
+            + "\n".join(linhas))
+    return "\n\n".join(blocos)
 
 
 def _usuario_padrao(cfg):
@@ -544,7 +577,8 @@ def ciclo(cfg, lite, client, manual=False):
                 # só reavalia se chegou interação nova desde a última avaliação
                 ult = lite.execute(
                     "SELECT qtd_interacoes, pode_concluir, cqs_ok, COALESCE(qtd_fichas,0), COALESCE(qtd_audios,0), "
-                    "cqs_versao, status, COALESCE(cqs_sec_ok,0) FROM avaliacoes "
+                    "cqs_versao, CASE WHEN status='pendente' AND COALESCE(status_cqs,'pendente')='pendente' "
+                    "THEN 'pendente' ELSE 'revisado' END, COALESCE(cqs_sec_ok,0) FROM avaliacoes "
                     "WHERE atendimento_id=? ORDER BY id DESC LIMIT 1", (aid,)
                 ).fetchone()
                 # fichas de visita do período (da 1ª iteração até hoje)

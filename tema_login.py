@@ -75,5 +75,16 @@ TEMAS = {
 }
 
 
-def css(tema="c"):
-    return _BASE.format(**TEMAS.get(tema, TEMAS["c"]))
+def css(tema="c", imagem=None):
+    """imagem: caminho de um .svg/.png desenhado por cima do degradê (fica embutido no CSS)."""
+    t = dict(TEMAS.get(tema, TEMAS["c"]))
+    if imagem:
+        import base64
+        from pathlib import Path
+        p = Path(imagem)
+        if p.is_file():
+            mime = {".svg": "image/svg+xml", ".jpg": "image/jpeg", ".jpeg": "image/jpeg"}.get(
+                p.suffix.lower(), f"image/{p.suffix.lower().lstrip('.')}")
+            b64 = base64.b64encode(p.read_bytes()).decode()
+            t["fundo"] = f"url('data:{mime};base64,{b64}') center / cover no-repeat, " + t["fundo"]
+    return _BASE.format(**t)
