@@ -1,0 +1,13 @@
+anthropic
+pyodbc
+streamlit
+pandas
+striprtf
+openai
+pytesseract
+pillow
+pypdfium2
+cryptography
+google-genai
+faster-whisper
+reportlab

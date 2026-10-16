@@ -1,0 +1,53 @@
+# Regras de revisão (versão enxuta, a partir das 234 devoluções reais). Linhas com # são ignoradas.
+# A confirmação do cliente já é regra fixa do agente ([agente] exigir_confirmacao = sim).
+
+DOCUMENTAÇÃO
+1. O registro deve dizer O QUE o cliente pediu (dúvida ou erro) e O QUE foi feito ou orientado, de forma específica: qual ajuste, tela/rotina, relatório, consulta, configuração ou arquivos trocados (com os nomes). "Ajustado", "orientado", "verificado" sem dizer o quê = devolver ("Detalhar o que foi feito").
+2. Se o registro cita uma evidência (áudio, print, vídeo, relatório do CSInfo), ela precisa estar no atendimento. Citou e não anexou = devolver.
+3. O que foi feito pelo programador/desenvolvimento precisa estar documentado no próprio atendimento.
+4. Dúvida sobre relatório: registrar qual relatório foi usado e mostrar ao cliente como defini-lo como favorito.
+
+COERÊNCIA
+5. Todas as interações devem ser do mesmo assunto. Interação de outro atendimento ou dois assuntos distintos = devolver (separar em atendimentos).
+6. A conclusão precisa bater com o histórico: não pode ser texto copiado de outro atendimento nem contradizer as interações.
+7. Dúvida ou demanda do cliente não compreendida/esclarecida no registro = devolver.
+
+RDM / CORREÇÃO NO SISTEMA
+8. Falha ou erro de rotina do sistema identificado = precisa de RDM aberta e com o número informado no atendimento.
+9. Solução de contorno/paliativa = precisa de RDM para a correção definitiva; sem ela, devolver.
+9b. Processo resolvido com alteração manual (ajuste direto no banco, correção manual de dados, passo manual fora do sistema) porque o sistema não faz = abrir RDM pedindo que o sistema passe a fazer.
+10. Atendimento que depende de RDM ainda não concluída ou validada = não concluir (manter em monitoramento).
+
+ATUALIZAÇÃO / MONITORAMENTO
+11. Se a solução depende de atualização de versão do cliente: informar o número do atendimento que vai monitorar a atualização, ou manter este em monitoramento.
+12. Atendimento em monitoramento (lentidão, infraestrutura, integração/API, correção em teste) ou de controle interno (ex.: controle de atualização com cliente ativo) = não concluir enquanto estiver ativo.
+
+NOVAS (aprovadas em 13/10/2026 por alex)
+- Não concluir quando não houver confirmação de solução, retorno ou monitoramento com o cliente explícito. (ex.: "não há confirmação de solução ou retorno do cliente", "não tem conclusão da demanda", "aguardando retorno do cliente") (múltiplos casos)
+- Não concluir quando o registro não detalhar o que foi feito ou orientado, deixando a interação genérica ou sem elementos de validação. (ex.: "não esclarece o que foi feito/orientado", "não consta o que foi feito", "não informada qual consulta nem como foi feita a inclusão") (múltiplos casos)
+- Exigir que sejam inseridos documentos de suporte ao atendimento, como áudios, imagens ou vídeos para comprovar e documentar a situação. (ex.: "necessário incluir o áudio do cliente", "falta o vídeo citado", "registrar com print do Whatsapp") (diversos casos)
+- Exigir que haja registro claro das dúvidas expostas e das soluções apresentadas ou orientações passadas. (ex.: "favor sempre documentar as dúvidas expostas", "registrar a dúvida apresentada e a explicação dada", "informar claramente os relatórios, sempre especificar") (diversos casos)
+- Não concluir sem esclarecer questões conflitantes ou assuntos distintos dentro do mesmo atendimento, devendo separar em atendimentos diferentes. (ex.: "há dois assuntos distintos neste atendimento", "registro 1 e registro 2 não se complementam, assuntos divergem") (alguns casos)
+- Não concluir quando o atendimento for apenas paliativo ou solução de contorno sem tratamento definitivo via RDM para correção do problema. (ex.: "o que foi feito é solução de contorno", "necessário abrir RDM para tratamento") (diversos casos)
+- Exigir abertura de RDM para simulação e tratamento de erros no sistema quando identificada falha na rotina ou funcionalidade. (ex.: "abrir RDM simulando o cenário", "abrir RDM para tratamento", "abrir RDM para não permitir gravar sem informação obrigatória") (varios casos)
+- Exigir detalhamento ou documentação técnica do que foi feito por programador para histórico do chamado. (ex.: "documentar, com auxílio do programador, o que foi feito") (alguns casos)
+- Não concluir enquanto não houver acompanhamento e monitoramento junto ao cliente da atualização pendente ou melhoria aplicada via RDM. (ex.: "atendimento deve permanecer em monitoramento até a atualização", "monitorar junto ao cliente") (diversos casos)
+- Não concluir quando o atendimento estiver em monitoramento ativo junto ao cliente, mesmo que a correção esteja pendente ou em teste. (ex.: "atendimento deverá permanecer em monitoramento", "manter em monitoramento") (vários casos)
+- Exigir registro das datas e planos de follow-up para contatos futuros no monitoramento. (ex.: "data do próximo contato alterada para...") (alguns casos)
+- Não concluir quando houver inconsistência ou falta de coerência entre histórico e a conclusão apresentada. (ex.: "registro incompatível com conclusão", "conclusão não condiz com fim da interação") (diversos casos)
+- Exigir que o histórico demonstre claramente a solução aplicada e sua efetividade com o cliente. (ex.: "histórico não deixa claro que foi resolvido nem como") (diversos casos)
+- Não concluir atendimento com registros conflitantes ou informações desconexas que impeçam entendimento da situação. (ex.: "não foi possível entender a dúvida", "demanda não compreendida") (vários casos)
+- Exigir indicação clara de que o cliente foi orientado e conseguiu executar o procedimento requerido. (ex.: "cliente orientado e conseguiu efetuar o processo", "confirmar que cliente foi orientado") (diversos casos)
+- Exigir que a orientação passada seja detalhada e contenha explicação dos passos. (ex.: "sempre informar detalhadamente o procedimento e configurações", "passar a adotar postura de sempre mostrar como definir...") (alguns casos)
+- Não concluir quando o histórico indicar necessidade de treinamento para o cliente sobre rotinas para reduzir chamados. (ex.: "indica que um treinamento pode ser necessário") (casos isolados)
+- Exigir explicação ao cliente de conceitos que possam gerar dúvidas na utilização do sistema. (ex.: "verificar e explicar ao cliente a diferença entre eles", "exemplificar para melhor entendimento") (alguns casos)
+- Exigir a informação da existência e registro do monitoramento das atualizações pendentes no cliente, sem concluir enquanto não finalizadas. (ex.: "deve ser informado o atendimento que monitorará esta atualização pendente") (vários casos)
+- Exigir inclusão de relatórios técnicos gerados, como CSInfo, envolvidos na migração ou análise do ambiente cliente. (ex.: "deve ser anexado o relatório gerado pelo CSInfo") (vários casos)
+- Exigir aviso prévio mínimo e programação para migração de servidor, evitando conclusões indevidas quando pendente. (ex.: "migração sempre sob demanda, com aviso mínimo") (alguns casos)
+- Exigir registro das configurações técnicas e interações com TI do cliente em casos de infraestrutura e servidores. (ex.: "colher dados do servidor com o CSInfo", "verificar junto ao TI aquisição de no-break") (alguns casos)
+- Monitorar e não concluir problemas relacionados a lentidão, consumo de recursos e erros do sistema ligados à infraestrutura, até resolução definitiva ou plano. (ex.: "atendimento deve ser monitorado pois impacto da não solução pode gerar falha grave") (vários casos)
+- Exigir detalhamento ou documentação clara em caso de integração via API, informando status, erros e acompanhamento. (ex.: "manter em monitoramento", "provocar abertura de RDM para correção de erro de API") (vários casos)
+- Não concluir atendimento que contenha mais de um tema e que não tenha sido desmembrado em atendimentos distintos. (relacionado a temas diferentes em um único atendimento)
+- Exigir confirmação junto ao cliente sobre resolução de problemas críticos antes de concluir atendimento. (ex.: "confirmar se cliente conseguiu ajustar", "confirmar se resolve", "confirmar se foi resolvido") (diversos casos)
+- Não concluir quando existirem dúvidas em aberto que impeçam o avanço ou finalização do atendimento, devendo melhorar ou solicitar esclarecimentos adicionais. (ex.: "ainda não está sendo possível entender a demanda", "necessário esclarecer para verificarmos o andamento") (vários casos)
+- Não concluir atendimento que seja de controle interno, como controle de atualização, enquanto o cliente estiver ativo ou pendente. (ex.: "controle de atualização... não pode ser concluído enquanto cliente ativo") (alguns casos)

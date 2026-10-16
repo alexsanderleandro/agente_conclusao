@@ -1,0 +1,17 @@
+# credenciais (conn_string, chaves de IA e senha SMTP cifradas) e a chave que as decifra;
+# config*.ini pega também cópias como "config - Copia.ini" (o config.ini.example continua no git)
+config*.ini
+config.ini.tmp
+chave_mestra.key
+
+# dados locais do agente (decisões do analista, logs)
+avaliacoes.db
+avaliacoes.db-*
+agente.log
+ultimo_usuario.txt
+relatorios/
+
+# python
+__pycache__/
+*.pyc
+.venv/

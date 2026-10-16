@@ -1,0 +1,71 @@
+# Regras sugeridas a partir de 234 devoluções reais (gpt-4.1-mini).
+# Revise: corrija, apague o que não vale e salve como regras_aprovadas.txt (só esse entra no agente).
+
+DOCUMENTAÇÃO DO REGISTRO
+- Não concluir quando não houver confirmação de solução ou retorno do cliente no histórico. (vários casos)
+- Não concluir quando faltar detalhamento claro do que foi feito ou orientado ao cliente. (vários casos)
+- Exigir documentação completa de evidências, como áudio, vídeo, prints e arquivos mencionados no atendimento. (ex.: falta de áudio, vídeo, prints, arquivo do CSInfo)
+- Não concluir se o histórico indicar mais de um assunto no mesmo atendimento; usar um atendimento por assunto. (ex.: dois assuntos distintos no mesmo atendimento)
+- Não concluir quando existirem descrições genéricas, sem dados ou evidências que fundamentem as informações registradas. (ex.: descrições genéricas e rasas)
+- Exigir registro de entendimento ou aceite do cliente quando a solução envolver orientações específicas passadas por canais como WhatsApp. (ex.: incluir print do WhatsApp)
+- Não concluir se não for comprovado o contato final com o cliente para confirmar se foi resolvido ou atender pendências. (ex.: aguardar retorno, confirmar resolução)
+
+RDM / CORREÇÃO NO SISTEMA
+- Não concluir quando houver pendências de RDM aberta, simulação pendente ou tratamento pendente. (vários casos)
+- Exigir abertura de RDM sempre que detectar falhas ou erros sistêmicos que exijam correção ou melhoria. (ex.: erro na emissão, cancelamento, validação, etc.)
+- Não concluir se solução aplicada for paliativa ou solução de contorno; necessário procedimento definitivo na RDM. (vários casos)
+- Não concluir se não houver conclusão da RDM vinculada ao atendimento. (vários casos)
+- Exigir registro claro do que foi simulado ou testado e o resultado para tratamento na RDM. (vários casos)
+
+MONITORAMENTO / PENDÊNCIAS TÉCNICAS
+- Não concluir quando o atendimento estiver em monitoramento ativo, aguardando atualização ou movimentação do cliente. (vários casos)
+- Exigir alerta e registro da atualização pendente, incluindo número ou referência do atendimento relacionado. (vários casos)
+- Exigir controle ou monitoramento do atendimento enquanto o cliente estiver ativo e a demanda não resolvida. (ex.: pós-venda, migração, atualizações)
+
+ATUALIZAÇÃO DE VERSÃO / MIGRAÇÃO / AMBIENTE
+- Não concluir atendimento de migração sem anexar o relatório gerado pelo CSInfo. (casos específicos)
+- Exigir documentação completa sobre ambiente do cliente, incluindo versão do sistema operacional e servidor, para avaliações técnicas. (caso servidor Windows 10)
+- Monitorar e orientar sobre necessidade de atualização pendente para emissão correta de notas e relatórios. (ex.: necessidade atualização IBS/CBS, SQL)
+- Exigir comprovação de ação técnica antes da conclusão em problemas relacionados a desempenho, lentidão, travamentos, banco de dados e falhas no servidor.
+
+ORIENTAÇÃO E TREINAMENTO
+- Não concluir se o cliente não estiver orientado detalhadamente sobre procedimentos, configurações e uso do sistema para resolver a dúvida. (ex.: orientar passo a passo, informar detalhadamente procedimentos)
+- Exigir recomendação para treinamento quando forem recorrentes os atendimentos sobre o mesmo tema para o mesmo cliente. (ex.: grupo de estoque)
+- Exigir explicação clara da diferença entre conceitos do sistema que impactam uso e documentos fiscais quando existir dúvida. (ex.: descrição x nome oficial, CFOP)
+- Exigir registro de orientações específicas de uso, como relatório favorito, filtros, rotinas, e consultas para agilizar o uso do sistema.
+
+COERÊNCIA ENTRE REGISTROS / HISTÓRICO
+- Não concluir quando houver incoerência ou divergência entre registros do mesmo atendimento, como diferentes assuntos ou informações divergentes. (ex.: registros 1 e 2 não se complementam)
+- Não concluir quando o histórico sugerir atendimento incompatível com o assunto ou cliente do atendimento. (ex.: interação anterior não pertence a esse atendimento)
+- Exigir clareza e contexto no registro para validação do ocorrido e do atendimento prestado.
+
+CONFIRMAÇÃO COM CLIENTE / SOLICITAÇÃO DE DADOS
+- Não concluir antes de confirmar se o cliente conseguiu resolver ou aplicar a orientação dada, caso a orientação dependa de ação do cliente. (vários casos)
+- Exigir solicitação de e-mail ou confirmação formal do cliente para validar o funcionamento ou concordância com o suporte. (ex.: confirmação do pedido)
+- Exigir confirmação e acompanhamento ativo quando o cliente informar uso de outro sistema para rotinas críticas. (ex.: contrato de locação)
+
+ATENDIMENTOS COM VÁRIOS ASSUNTOS
+- Não concluir atendimentos que abordarem mais de um assunto distinto, devendo ser desmembrados e registrados separadamente. (ex.: instalação sistema com dois temas)
+
+USO DE RDM E CONTATO COM PROGRAMADOR / OUTROS SETORES
+- Exigir encaminhamento para RDM quando o problema for sistêmico e ainda não tratado em sistema. (vários erros)
+- Exigir alinhamento e comunicação com áreas comerciais quando for identificado interesse ou possibilidade de venda de módulos ou rotinas adicionais. (ex.: módulo CT-e, controle de produção)
+- Exigir registro de troca de responsáveis pelo atendimento e informar claramente as transferências.
+
+INTEGRAÇÃO E APIS
+- Manter em monitoramento específico os atendimentos relacionados a APIs até solucionadas. (vários casos)
+- Exigir procedimentos claros para orientação do usuário e registro da situação dos erros e ações tomadas em integrações.
+
+DADOS FISCAIS E EMISSÃO DE NOTAS
+- Exigir que estejam claros os ajustes feitos e as orientações para casos fiscais, como CFOP, PIS/COFINS, boletos e cancelamentos. (vários casos)
+- Exigir abertura de RDM para tratar falhas impactantes nessas rotinas. (ex.: PIS/COFINS, emissão, cancelamentos)
+
+USUÁRIO / ATENDIMENTO DIVERSOS
+- Exigir registro de inclusão de áudios do cliente quando disponíveis. (vários casos)
+
+CONTROLE DE VERSÃO E ATUALIZAÇÃO
+- Controle rigoroso sobre vinculação de atendimentos a atualizações; não concluir se questão estiver vinculada incorretamente a outro ticket. (ex.: controle de atualização do sistema)
+
+CONCLUSÃO GERAL
+- Não concluir atendimentos com falta de informações, pendências, dúvidas não esclarecidas e sem evidências adequadas.
+- Todos os atendimentos devem apresentar histórico claro, coerente e fundamentado para garantir qualidade e rastreabilidade.

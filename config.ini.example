@@ -1,0 +1,285 @@
+[banco]
+; Usuário com permissão SOMENTE de leitura
+conn_string = DRIVER={ODBC Driver 17 for SQL Server};SERVER=SEU_SERVIDOR;DATABASE=BDCEOSoftware;UID=usuario_leitura;PWD=senha
+
+[agente]
+; usado só com [agendamento] modo = intervalo
+intervalo_minutos = 15
+; limite de atendimentos avaliados por ciclo (controla custo de token)
+max_por_ciclo = 20
+max_chars_historico = 12000
+; aprendizado: quantos exemplos de cada tipo (aceitos e rejeitados) entram no prompt. 0 desliga.
+; Mais exemplos = IA mais calibrada, porém mais token por avaliação.
+exemplos_por_tipo = 3
+; quando a tabela CQSTipoRegistro mudar, reclassifica os "Sim" ainda pendentes (consome crédito)
+reavaliar_quando_cqs_mudar = sim
+; provider: openai ou anthropic
+provider = openai
+; confira o nome do modelo na sua conta OpenAI (um modelo "mini" costuma bastar)
+modelo = gpt-4.1-mini
+max_tokens_resposta = 800
+; 0 = respostas estáveis: o mesmo atendimento dá a mesma decisão (no teste de 16/10, com o padrão do provedor,
+; 21 de 90 casos mudaram de decisão entre rodadas iguais); vazio = padrão do provedor
+temperatura = 0
+; postura: conservadora = na dúvida, não conclui (padrão; o revisor às vezes deixa pendência passar)
+;          calibrada = usa a taxa real de conclusão do ERP e só nega com pendência concreta
+postura = conservadora
+; confirmação do cliente para concluir: sim = sempre | erros = só em erro/falha (dúvida/orientação não) | nao
+exigir_confirmacao = sim
+; a interação de conclusão (última antes do pedido de revisão) precisa ter como contato alguém do cliente;
+; contato = o próprio analista ou outro usuário interno não comprova que falou com o cliente -> "Não" (sim | nao)
+exigir_contato_cliente = sim
+; o assunto que falta segue em OUTRO atendimento com o número informado -> pode concluir este (CQS pelo que foi
+; feito até a transferência); dispensa confirmação/contato do cliente, mas RDM pendente vinculada continua travando
+continuidade_outro_atendimento = sim
+; registro de atualização = texto com os 4 dados obrigatórios, em qualquer ordem/formato: atualização (completa
+; ou parcial), data, analista e tipo (remota ou presencial). Atendimento só com registro(s) -> conclui e o CQS
+; da atualização vira o principal; com texto a mais (ex.: OBS), só pendência real nesse texto impede. Com outras
+; interações, avalia o todo e a atualização gera o CQS secundário (sim | nao). RDM pendente continua travando
+concluir_so_atualizacao = sim
+; 2ª revisão (checagem extra de cada "Sim"): desligada em 16/10/2026. Em produção mudou 1 decisão em ~256,
+; nos testes errou 12 das 17 vezes que mudou e custava ~40% dos tokens (gpt-4.1). Para comparar: testar.py --com-revisao
+segunda_revisao = nao
+; modelo só da 2ª revisão (vazio = o mesmo). Um modelo mais forte aqui custa pouco e ajuda muito.
+modelo_revisao =
+; a 2ª revisão só devolve com certeza >= este valor (0 a 1). Devolvendo demais? suba para 0.85
+limite_revisao = 0.75
+; Cada usuário cadastra provedor/modelo/chave no painel (gravado cifrado em [chaves_api]).
+; Para rodar como serviço sem ninguém logado, informe de qual usuário usar a chave:
+usuario_servico =
+; Modo antigo (só se nenhum usuário for informado): provider/modelo acima + chave na variável abaixo
+api_key_env = OPENAI_API_KEY
+; sugestões abaixo desse valor aparecem no dashboard como "baixa confiança"
+limite_confianca = 0.8
+; edite à vontade: é o critério que a IA usa
+criterio_conclusao =
+    - A última resposta do analista resolveu ou respondeu o que o cliente pediu.
+    - Há confirmação da solução em qualquer interação (veja o que CONTA COMO CONFIRMAÇÃO: inclusive o resultado
+      registrado pelo analista), ou o cliente conseguiu executar o que foi orientado.
+    - Não há pendência aberta (cliente aguardando algo, analista prometeu retorno, etc.).
+    - Se o cliente fez nova pergunta/problema depois da última resposta, NÃO concluir.
+
+; qualidade do registro: o revisor devolve quando o registro não diz o que foi feito (edite à vontade)
+criterio_registro =
+    - O registro precisa deixar claro O QUE o cliente pediu e O QUE foi feito ou orientado
+      (qual ajuste, qual consulta/relatório, qual caminho no sistema). Registro vago ou genérico
+      ("ajustado", "orientado", "verificado") sem dizer o quê NÃO pode ser concluído.
+    - Os registros precisam ser coerentes entre si (mesmo assunto). Se divergirem, NÃO concluir.
+    - Se o analista citou apurações/verificações a fazer, o resultado delas precisa estar registrado.
+    - Nesses casos, explique em 'pendencias' o que falta no registro (ex.: "Registro: não informa qual consulta foi usada").
+
+[queries]
+; Colunas que identificam o atendimento (chave composta). Ordem = ordem dos "?" em interacoes.
+chave_colunas = codempresa, numatendimento, desdobramento
+
+; candidatos: Situacao=0 e a iteração MAIS RECENTE (maior NumIteracao) é do tipo 26.
+; Retorna: codempresa, numatendimento, desdobramento, assunto, cliente, analista
+candidatos =
+    SELECT A.CodEmpresa      AS codempresa,
+           A.NumAtendimento  AS numatendimento,
+           A.Desdobramento   AS desdobramento,
+           A.AssuntoAtendimento AS assunto,
+           A.CodCliente      AS codcliente,
+           C.Cidade          AS cidade,
+           C.Estado          AS uf,
+           C.NomeCliente     AS cliente,
+           COALESCE(UA.NomeUsuario, CAST(A.CodUsuario AS VARCHAR(20))) AS analista
+    FROM Atendimento A WITH (NOLOCK)
+    LEFT JOIN Clientes C WITH (NOLOCK) ON C.CodCliente = A.CodCliente
+    LEFT JOIN Usuarios UA WITH (NOLOCK) ON UA.CodUsuario = A.CodUsuario
+    WHERE A.Situacao = 0
+      AND EXISTS (
+            SELECT 1 FROM AtendimentoIteracao AI WITH (NOLOCK)
+            WHERE AI.CodEmpresa = A.CodEmpresa
+              AND AI.NumAtendimento = A.NumAtendimento
+              AND AI.Desdobramento = A.Desdobramento
+              AND AI.CodTipoIteracao = 26
+              AND AI.NumIteracao = (
+                    SELECT MAX(AI2.NumIteracao) FROM AtendimentoIteracao AI2 WITH (NOLOCK)
+                    WHERE AI2.CodEmpresa = A.CodEmpresa
+                      AND AI2.NumAtendimento = A.NumAtendimento
+                      AND AI2.Desdobramento = A.Desdobramento))
+
+; interacoes: 3 parâmetros "?" (empresa, número, desdobramento), ordem cronológica.
+; Retorna: data, autor, tipo, texto, contato (NomeContato: com quem o analista falou), codtipo
+interacoes =
+    SELECT AI.DataAlteracao AS data,
+           COALESCE(U.NomeUsuario, CAST(AI.CodUsuario AS VARCHAR(20))) AS autor,
+           COALESCE(T.NomeTipoIteracao, CAST(AI.CodTipoIteracao AS VARCHAR(10))) AS tipo,
+           AI.TextoIteracao AS texto,
+           AI.NomeContato AS contato,
+           AI.CodTipoIteracao AS codtipo
+    FROM AtendimentoIteracao AI WITH (NOLOCK)
+    LEFT JOIN Usuarios U WITH (NOLOCK) ON U.CodUsuario = AI.CodUsuario
+    LEFT JOIN TipoIteracao T WITH (NOLOCK) ON T.CodTipoIteracao = AI.CodTipoIteracao
+    WHERE AI.CodEmpresa = ? AND AI.NumAtendimento = ? AND AI.Desdobramento = ?
+    ORDER BY AI.NumIteracao
+
+; rdms: RDMs vinculadas ao atendimento. 3 parâmetros "?" (empresa, número, desdobramento do atendimento).
+; Retorna: numrdm, desdobramento, situacao (cada desdobramento da RDM conta separado)
+rdms =
+    SELECT R.NumRDM AS numrdm, R.Desdobramento AS desdobramento, R.Situacao AS situacao
+    FROM RDM R WITH (NOLOCK)
+    WHERE R.CodEmpresa = ? AND R.NumAtendimento = ? AND R.DesdobramentoAtendimento = ?
+
+; usuarios: usado para trocar o código do analista pelo nome nas avaliações já gravadas.
+; Deve retornar: codusuario, nomeusuario
+usuarios =
+    SELECT CodUsuario AS codusuario, NomeUsuario AS nomeusuario
+    FROM Usuarios WITH (NOLOCK)
+
+; CQS: tipos de registro que a IA pode sugerir (somente para os avaliados como "Sim").
+; Deve retornar: codtiporegistro, nometiporegistro, descricaotiporegistro, pontos
+; Se o catálogo for muito grande, filtre aqui os tipos ativos (aumenta o custo de token).
+cqs_tipos =
+    SELECT CodTipoRegistro       AS codtiporegistro,
+           NomeTipoRegistro      AS nometiporegistro,
+           DescricaoTipoRegistro AS descricaotiporegistro,
+           Pontos                AS pontos
+    FROM CQSTipoRegistro WITH (NOLOCK)
+
+[cqs]
+; Códigos de CQS que a IA pode usar (separados por vírgula). Vazio = todos da tabela.
+; Tipos administrativos/negativos (ranking, horário, ficha atrasada...) não devem entrar aqui.
+; principal: classificação do atendimento | secundario: registros de "Atualização: ..." por analista
+; secundario vazio = mesma lista do principal
+principal = 52,54,55,56,57,58,59,60,64,65
+secundario = 55,56,59,60,65
+
+; códigos que nunca contam (histórico, diagnóstico e aprendizado): 66 = lixeira dos CQS excluídos,
+;   70 = antigo "atendimento do gerente" (desativado; esses atendimentos agora passam pela IA)
+ignorar = 66,70
+; regras da empresa para escolher o CQS (texto livre, uma por linha, com indentação); vão no prompt
+regras =
+    - CQS 54: só quando o analista NÃO auxiliou o cliente no sistema: resposta sobre assunto fora do sistema da
+      empresa, cliente desistiu, demanda resolvida pelo próprio cliente ou pela TI dele, andamento dado por outro
+      analista. Se o analista analisou, orientou, acessou remoto, testou/simulou, explicou ou ajustou algo, NÃO é
+      54: é no mínimo 55 (houve esforço do analista).
+    - CQS 65: atualização remota do sistema, completa ou parcial.
+    - CQS 60 e 59: SÓ quando houve VISITA presencial ao cliente (ficha de visita, "presencial", "in loco",
+      "visita"), inclusive atualização presencial: 60 se o cliente é de Juiz de Fora-MG, 59 se é de outra cidade
+      (linha "Local do cliente"). Atendimento remoto, por telefone ou WhatsApp NUNCA é 59/60.
+; cidade da empresa: o agente informa à IA só se o cliente é desta cidade ou de fora (Clientes.Cidade/Estado)
+cidade_local = Juiz de Fora/MG
+; atendimento só com registro de atualização (sem texto a mais): CQS sem chamar a IA, pela modalidade e cidade
+so_atualizacao = remoto:65, presencial_jf:60, presencial_fora:59
+
+[privacidade]
+; LGPD - nada disso altera o banco do ERP; vale só para o que é enviado à IA.
+; Camada 1: CPF, CNPJ, chave NF-e, e-mail, telefone, cartão, IP e senhas viram [CPF], [SENHA]...
+mascarar_dados = sim
+; Nomes de usuários do ERP e do cliente viram [USUARIO_123] / [CLIENTE] no envio
+; e voltam ao nome real no resumo, localmente.
+pseudonimizar_nomes = sim
+; Camada 2: ler os prints (PNG) dos atendimentos por OCR local. A imagem NÃO é enviada,
+; só o texto lido, já mascarado. Requer o Tesseract instalado.
+ler_imagens = sim
+tesseract_cmd = C:\Program Files\Tesseract-OCR\tesseract.exe
+ocr_idioma = por+eng
+max_imagens_por_atendimento = 5
+
+[fichas]
+; Fichas de visita (PDF, foto ou escaneado) na pasta do cliente na rede:
+;   <raiz>\<PastaDoCliente>\<subpasta>\FichaDeVisita(Assinada) -Cliente- 23set2026.pdf
+; Pendência na ficha (explícita ou implícita) impede a conclusão.
+verificar = sim
+; Rodando como serviço (NSSM), drive mapeado (M:) não existe: use o caminho UNC (\\servidor\pasta)
+raiz = M:\
+subpasta = FichaVisita
+max_fichas_por_atendimento = 3
+max_paginas = 5
+max_chars_ficha = 6000
+
+[audios]
+; Áudios de WhatsApp: transcritos LOCALMENTE (faster-whisper, CPU). O áudio não sai do servidor;
+; só o texto transcrito vai para a IA, já mascarado. Procura:
+;   1) caminhos citados na iteração (ex.: M:\GET\Audios WhatsApp\Atend_5910473 .ogg)
+;   2) <pasta do cliente>\<subpasta>\ arquivos com o nº do atendimento no nome
+transcrever = sim
+subpasta = Audios WhatsApp
+; tiny/base (rápidos, piores) | small (bom equilíbrio) | medium (melhor, mais lento)
+modelo_whisper = small
+dispositivo = cpu
+max_audios_por_atendimento = 5
+max_minutos_por_audio = 10
+; Como serviço (NSSM) o drive M: não existe: troque pela pasta de rede. Ex.: M:\=\\servidor\dados\
+mapear_unidade =
+
+[pastas_clientes]
+; Quando o nome da pasta não bate com o nome do cliente, informe aqui: CodCliente = Pasta
+; 1234 = MinasFreios
+
+[aprendizado]
+; Gabarito real: cada pedido de revisão (iteração 26) já decidido no ERP vira exemplo para a IA.
+;   próxima iteração "Conclusão revisada." = concluído (+ CQS lançado) | outra coisa = devolvido ao analista
+; Importação incremental a cada ciclo. Carga inicial: python historico.py --importar --meses 12
+importar_historico = sim
+meses_historico = 6
+; Exemplos escolhidos por SEMELHANÇA com o atendimento atual (em vez de só os mais recentes)
+usar_similares = sim
+; quantos exemplos parecidos das revisões do painel (por bloco: análise e CQS)
+exemplos_similares = 4
+; quantos casos parecidos do histórico real do ERP
+exemplos_historico = 4
+; textos da iteração seguinte ao pedido de revisão que NÃO são decisão do revisor (regex, sem acento, minúsculo)
+nao_decisao =
+    ^atendimento enviado para revis
+    ^ticket \d+
+    ^atendimento auditado
+; CQS do histórico só a partir desta data (AAAA-MM-DD): antes disso as regras eram outras.
+; A análise (concluir/devolver) usa o período todo. Mudou a data? rode: historico.py --recarregar --importar
+cqs_desde =
+; (opcional) sobrescrever as consultas do histórico: [queries] historico_revisoes / historico_cqs
+
+[agendamento]
+; modo = horario  -> roda nos dias/horários abaixo (relê o ini a cada minuto, não precisa reiniciar)
+; modo = intervalo -> modo antigo, a cada [agente] intervalo_minutos
+modo = horario
+; seg, ter, qua, qui, sex, sab, dom - lista (seg,qua,sex) ou faixa (seg-sab)
+dias = seg-sab
+; um ou mais horários HH:MM separados por vírgula (ex.: 12:00, 19:00). Hora do servidor.
+horarios = 19:00
+
+[email]
+; Envia o PDF do ciclo por e-mail. Ciclo sem avaliações não gera PDF e não envia nada.
+enviar = sim
+; Locaweb: porta 587 (STARTTLS, recomendada) | 465 (SSL) | 2525 (se as outras estiverem bloqueadas)
+; confira o servidor SMTP no painel do e-mail da Locaweb
+smtp_host = email-ssl.com.br
+porta = 587
+usuario = suporte@ceosoftware.com.br
+remetente = Agente de Revisão CEOSoftware <suporte@ceosoftware.com.br>
+; separados por ; ou ,
+destinatarios = alex@ceosoftware.com.br; marcoaurelio@ceosoftware.com.br
+copia =
+; {data} = data/hora do ciclo | {concluir} = quantos podem concluir
+assunto = Revisão de conclusão – ciclo {data} – {concluir} para concluir
+; "Buscar próximos" no painel também envia e-mail?
+enviar_em_busca_manual = nao
+timeout_segundos = 60
+; senha da conta: cadastre pelo painel (fica cifrada aqui, não digite à mão)
+senha =
+
+[relatorio]
+; Relatório PDF de cada ciclo (Modelo B), salvo nesta pasta (relativa à pasta do agente ou absoluta)
+gerar = sim
+pasta = relatorios
+; Indicador no PDF e no e-mail: concluídos na revisão manual sem confirmação do cliente
+; (novos desde o ciclo anterior + total destes últimos N dias). 0 = desliga.
+dias_sem_confirmacao = 30
+
+[painel]
+; Motivos de um clique na revisão da análise (separados por ;). Vazio = lista padrão do motivos.py.
+; motivos_sim = quando a IA disse Sim e não podia concluir; motivos_nao = quando disse Não e podia.
+; "Outro (descreva)" é sempre incluído no fim.
+motivos_sim =
+motivos_nao =
+
+[rdm]
+; Atendimento com RDM vinculada só pode ser concluído quando TODAS as RDMs vinculadas estão nestas
+; situações (código:nome). Qualquer outra situação impede a conclusão (o agente marca "Não").
+verificar = sim
+finalizadas = 3:Concluída, 4:Cancelada
+
+[saida]
+sqlite = avaliacoes.db
