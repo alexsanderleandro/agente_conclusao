@@ -24,14 +24,23 @@ Painel Streamlit para os gerentes revisarem as sugestões (a IA aprende com essa
   Analista = autor da interação ou analista do atendimento, pelo login ("Vinicius.Souza") ou só o 1º nome ("Vinícius");
   interno = login exato de outro usuário, só se tiver ponto ou nome completo (30 logins de uma palavra, ex. "ramon",
   coincidem com nomes de clientes). Com `[agente] exigir_contato_cliente = sim`, a interação de conclusão com contato
-  que não é o cliente = "Não" forçado no código + pendência "Contato: ...". Interação de conclusão = a última antes da
-  26 que não seja vazia, nem só "enviado para revisão", nem nota interna de OUTRO usuário (ex.: devolução do revisor).
+  que não é o cliente = "Não" forçado no código + pendência "Contato: ...". Conclusão com o cliente = a própria 26
+  quando traz o resumo da conclusão (texto além do fecho "Atendimento enviado para revisão/finalizado",
+  `resumo_no_pedido`) com contato do cliente, OU a última antes da 26 que não seja vazia, nem só "enviado para
+  revisão", nem nota interna de OUTRO usuário (ex.: devolução do revisor). A 26 entrou em 20/10: os analistas escrevem
+  a conclusão nela; simulação nas 281 decisões do painel liberou 31 travas, 28 certas e 3 sem relação com contato.
   Obs.: o revisor humano concluía 95% desses casos (regra nova), então o "acerto real" cai nesses.
-- **Confirmação** (`_CONF_VALE`): vale o OK do cliente em texto/áudio/print, o RESULTADO registrado pelo analista
-  ("nota transmitida com sucesso", "cliente conseguiu..."), e o cliente dizer que resolveu sozinho/não precisa mais
-  (tipos tirados das revisões do gerente), em QUALQUER interação, não só na última; o resultado registrado pelo analista
-  basta (sem exigir frase "explícita" do cliente; idem em `[agente] criterio_conclusao`). OCR lê as ÚLTIMAS
-  `max_imagens_por_atendimento` imagens (a confirmação costuma estar nos últimos prints).
+- **Pedido de revisão (26)**: o prompt manda ler o texto dela como RESUMO DA CONCLUSÃO (o que foi feito e o resultado);
+  antes mandava ignorá-la ("avalie o que veio antes"), o que causou 5 dos 6 erros de 19/10.
+- **Confirmação** (`_CONF_VALE`): vale (a) o OK do cliente em texto/áudio/print; (b) o analista registrar que o CLIENTE
+  obteve o resultado, fez/testou/conseguiu ("o cliente realizou um teste e o sistema iniciou normalmente", "seguindo
+  essa sequência a nota fechou"), ou resultado conferido no sistema dele ("nota transmitida com sucesso"); (c) o cliente
+  dizer que resolveu sozinho/não precisa mais; (d) DÚVIDA pura respondida de forma clara ("a dúvida do cliente foi
+  esclarecida"). Não vale: só a ação do analista, mesmo "com êxito" ("cadastro realizado com êxito"), nem resultado sem
+  dizer quem verificou ("passou a ser exibido corretamente") em PROBLEMA do cliente (critério tirado das revisões de
+  19/10, confirmadas no ERP). Em QUALQUER interação, inclusive no resumo da 26; sem exigir frase "explícita" do cliente
+  (idem em `[agente] criterio_conclusao`). OCR lê as ÚLTIMAS `max_imagens_por_atendimento` imagens (a confirmação
+  costuma estar nos últimos prints).
 - **Continuidade em outro atendimento** (`[agente] continuidade_outro_atendimento = sim`): se o assunto que falta
   segue em OUTRO atendimento com o número informado, este pode ser concluído e o CQS sai do que foi feito até a
   transferência. A IA devolve `atendimento_continuidade`; o código confere (outro número, escrito no histórico, existe

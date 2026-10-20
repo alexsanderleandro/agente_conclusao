@@ -4,6 +4,19 @@ config*.ini
 config.ini.tmp
 chave_mestra.key
 
+# chaves e segredos soltos: arquivos com chave de API (ex.: "sk-proj-....txt"), .env, certificados
+sk-*
+*.key
+*.pem
+*.pfx
+.env
+.env.*
+*secret*
+*segredo*
+*senha*
+.streamlit/secrets.toml
+*.bundle
+
 # dados locais do agente (decisões do analista, logs)
 avaliacoes.db
 avaliacoes.db-*

@@ -381,16 +381,29 @@ _QUEM_CONTATO = {"analista": "o próprio analista como contato", "interno": "um 
 
 
 _SO_PEDIDO_REVISAO = re.compile(r"(?i)^\W*(atendimento\s+)?enviado\s+para\s+revis\w*\W*$")
+# fecho padrão do pedido de revisão: não conta como texto próprio da conclusão
+_FECHO_PEDIDO = re.compile(r"(?i)-?\s*atendimento\s+(enviado\s+para\s+revis\w*|finalizado|conclu[ií]do|encerrado)\W*")
+
+
+def resumo_no_pedido(r):
+    """O pedido de revisão (tipo 26) traz o resumo da conclusão escrito pelo analista (texto além do fecho padrão)?"""
+    return len(re.findall(r"[^\W\d_]{3,}", _FECHO_PEDIDO.sub(" ", limpar(r.get("texto"))))) >= 6
 
 
 def contato_conclusao(rows, analista=None, internos=frozenset()):
-    """Classificação do contato da interação de conclusão: a última antes do pedido de revisão (tipo 26) que não
-    seja vazia (sem texto e sem imagem), nem só "enviado para revisão", nem nota interna de OUTRO usuário com ele
-    mesmo ou outro interno como contato (ex.: a devolução do revisor). None quando a query [queries] interacoes não
-    traz o NomeContato ou não há interação assim."""
+    """Classificação do contato da conclusão. 'cliente' quando o pedido de revisão (tipo 26) traz o resumo da
+    conclusão com contato do cliente (os analistas costumam escrever a conclusão nele); senão, o contato da última
+    interação antes dele que não seja vazia (sem texto e sem imagem), nem só "enviado para revisão", nem nota interna
+    de OUTRO usuário com ele mesmo ou outro interno como contato (ex.: a devolução do revisor). None quando a query
+    [queries] interacoes não traz o NomeContato ou não há interação assim."""
     if not rows or "contato" not in rows[-1]:
         return None
-    antes = [r for r in rows if str(r.get("codtipo")) != "26"] if "codtipo" in rows[-1] else rows[:-1]
+    tem_tipo = "codtipo" in rows[-1]
+    pedido = rows[-1] if not tem_tipo or str(rows[-1].get("codtipo")) == "26" else None
+    if (pedido and resumo_no_pedido(pedido)
+            and classificar_contato(pedido.get("contato"), (pedido.get("autor"), analista), internos) == "cliente"):
+        return "cliente"
+    antes = [r for r in rows if str(r.get("codtipo")) != "26"] if tem_tipo else rows[:-1]
     for r in reversed(antes):
         autor, txt = r.get("autor"), limpar(r.get("texto"))
         if (not re.search(r"[^\W\d_]{3,}", txt) and not extrair_pngs_rtf(r.get("texto"))) or _SO_PEDIDO_REVISAO.match(txt):
@@ -492,16 +505,21 @@ CRITERIO_REGISTRO = """    - O registro precisa deixar claro O QUE o cliente ped
 _CONF_VALE = ("CONTA COMO CONFIRMAÇÃO (qualquer uma basta; o gerente aceita todas): "
               "(a) o cliente disse, em texto, áudio ou PRINT (trecho de imagem lido por OCR), que resolveu, funcionou, "
               "conseguiu ou deu certo, ou respondeu a orientação com OK/agradecimento (\"ok, obrigado\", \"deu tudo "
-              "certo\"); (b) o analista registrou o RESULTADO obtido no cliente: \"cliente conseguiu emitir/imprimir/"
-              "transmitir\", \"nota gravada e transmitida com sucesso\", \"integração efetuada sem erros\", \"não "
-              "apresentou mais o erro\", \"testado junto com o cliente e funcionou\", \"cliente acessou normalmente\", "
-              "\"cliente confirmou\"; (c) o cliente informou que resolveu sozinho ou que não precisa mais do atendimento "
-              "(\"já encontrou a diferença\", \"não precisa mais de suporte\"). Procure em TODO o histórico, não só na "
-              "última interação. Só a afirmação do analista de que FEZ o ajuste (\"ajustado\", \"orientado\", "
-              "\"corrigido\"), sem dizer o RESULTADO, NÃO conta.")
+              "certo\"); (b) o analista registrou que o CLIENTE obteve o resultado, fez, testou ou conseguiu (\"o cliente "
+              "realizou um teste e o sistema iniciou normalmente\", \"seguindo essa sequência a nota fechou no valor "
+              "desejado\", \"a cliente conseguiu emitir a nota\", \"testado junto com o cliente e funcionou\", \"cliente "
+              "acessou normalmente\", \"cliente confirmou\"), ou o resultado conferido no sistema do cliente (\"nota "
+              "gravada e transmitida com sucesso\", \"integração efetuada sem erros\"); (c) o cliente informou que "
+              "resolveu sozinho ou que não precisa mais do atendimento (\"já encontrou a diferença\", \"não precisa mais "
+              "de suporte\"); (d) DÚVIDA pura (pergunta sobre como o sistema funciona, sem erro para corrigir): a "
+              "resposta registrada de forma clara e específica, com \"a dúvida do cliente foi esclarecida\" ou "
+              "equivalente. Procure em TODO o histórico. NÃO conta: só a AÇÃO do analista, mesmo \"com êxito\" ou \"com "
+              "sucesso\" (\"cadastro realizado com êxito\", \"demonstrado\", \"orientado\", \"ajustado\", \"corrigido\"), "
+              "nem resultado que não diga quem verificou (\"passou a funcionar\", \"passou a ser exibido corretamente\") "
+              "quando o atendimento trata de um PROBLEMA do cliente.")
 
-_CONF_ONDE = (" A confirmação pode estar em QUALQUER interação (não precisa ser a última) e não precisa ser uma frase do "
-              "próprio cliente quando o analista registrou o resultado obtido.")
+_CONF_ONDE = (" A confirmação pode estar em QUALQUER interação, inclusive no resumo do pedido de revisão, e não precisa ser "
+              "uma frase do próprio cliente quando o analista registrou o resultado obtido pelo cliente.")
 
 CONFIRMACAO = {
     "sim": ("CONFIRMAÇÃO DO CLIENTE É OBRIGATÓRIA: só conclua se o histórico mostrar que o problema foi resolvido "
@@ -532,11 +550,13 @@ def texto_confirmacao(cfg):
 
 CONTATO = ("CONTATO DE CADA INTERAÇÃO: cada linha do histórico traz \"(contato: ...)\", com quem o analista falou naquela "
            "interação. \"contato: cliente\" é uma pessoa do cliente; \"o próprio analista\" ou \"usuário interno\" quer dizer "
-           "que ninguém do cliente participou (registro interno). Confirmação ou aceite do cliente só vale em interação "
-           "com contato do cliente.")
-CONTATO_CONCLUSAO = (" A interação de conclusão (a última antes do pedido de revisão) precisa ter contato do cliente e "
-                     "deixar claro o aceite dele; se o contato dela for o próprio analista, usuário interno ou não "
-                     "informado, NÃO conclua (pendência: \"Contato: a interação de conclusão não foi com o cliente\").")
+           "que ninguém do cliente participou (registro interno). Confirmação ou aceite DITO pelo cliente só vale em "
+           "interação com contato do cliente; o resultado registrado pelo analista (inclusive no resumo do pedido de "
+           "revisão) vale mesmo que o contato daquela linha seja o próprio analista.")
+CONTATO_CONCLUSAO = (" A conclusão precisa ter sido tratada com o cliente: o pedido de revisão (quando traz o resumo da "
+                     "conclusão) OU a última interação antes dele precisa ter contato do cliente; se nenhum dos dois "
+                     "tiver (contato = o próprio analista, usuário interno ou não informado), NÃO conclua (pendência: "
+                     "\"Contato: a interação de conclusão não foi com o cliente\").")
 
 
 CONTINUIDADE = """EXCEÇÃO - CONTINUIDADE EM OUTRO ATENDIMENTO: se o histórico mostra que o assunto que falta (pendência,
@@ -636,8 +656,10 @@ def distribuicao_cqs(cfg, lite):
 SYSTEM = """Você avalia atendimentos de suporte de um ERP para varejo/distribuição.
 Leia o histórico e decida se o atendimento já pode ser CONCLUÍDO.
 O atendimento chegou até você porque sua última iteração é do tipo "enviado para revisão"
-(código 26): alguém pediu para revisar se ele pode ser concluído. Essa última iteração
-é o pedido de revisão, não uma resposta ao cliente. Avalie o que veio antes dela.
+(código 26, "Revisão da conclusão"): o analista pediu para revisar se ele pode ser concluído.
+Nessa última iteração o analista costuma escrever o RESUMO DA CONCLUSÃO (o que o cliente pediu,
+o que foi feito e o resultado): leia-a junto com o resto do histórico; o resultado registrado
+nela vale como qualquer outro registro (veja CONTA COMO CONFIRMAÇÃO).
 
 Critérios para concluir (configuráveis):
 {criterio}
