@@ -450,6 +450,20 @@ def contato_conclusao(rows, analista=None, internos=frozenset()):
                                                       internos)
 
 
+# cliente dispensou o suporte: pode concluir com CQS 54 mesmo que a conclusão não tenha o cliente como contato
+# (regra do gerente, 22/10: "se o cliente indica que não precisa mais de suporte, pode concluir com CQS 54")
+_DISPENSA = re.compile(r"(?i)\bn[ãa]o\s+(precis|necessit)\w*\s+mais\s+(d[eoa]s?\s+|do\s+|o\s+)?(suporte|atendimento|"
+                       r"ajuda|aux[íi]lio)|\bn[ãa]o\s+quer\w*\s+mais\s+(o\s+|de\s+)?(suporte|atendimento|seguir|"
+                       r"prosseguir|continuar)|\bdesist\w+|\bn[ãa]o\s+(tem|h[áa])\s+mais\s+(interesse|necessidade)")
+
+
+def cliente_dispensou(rows, analista=None, internos=frozenset()):
+    """A interação de conclusão (ou o pedido de revisão) registra que o cliente não precisa ou não quer mais o suporte
+    ("cliente informou que não precisa mais de suporte", "desistiu")."""
+    idx = {_indice_pedido(rows), _indice_conclusao(rows, analista, internos)} - {None}
+    return any(_DISPENSA.search(limpar(rows[i].get("texto"))) for i in idx)
+
+
 def print_do_cliente_na_conclusao(rows, prot, analista=None, internos=frozenset()):
     """O analista anexou na conclusão (o pedido de revisão ou a interação de conclusão) um print de conversa do
     WhatsApp em que o cliente confirma o resultado ou agradece (privacidade.confirma_resultado; um "ok" solto não
@@ -558,8 +572,8 @@ _CONF_VALE = ("CONTA COMO CONFIRMAÇÃO (qualquer uma basta; o gerente aceita to
               "desejado\", \"a cliente conseguiu emitir a nota\", \"testado junto com o cliente e funcionou\", \"cliente "
               "acessou normalmente\", \"cliente confirmou\"), ou o resultado conferido no sistema do cliente (\"nota "
               "gravada e transmitida com sucesso\", \"integração efetuada sem erros\"); (c) o cliente informou que "
-              "resolveu sozinho ou que não precisa mais do atendimento (\"já encontrou a diferença\", \"não precisa mais "
-              "de suporte\"); (d) DÚVIDA pura (pergunta sobre como o sistema funciona, sem erro para corrigir): a "
+              "resolveu sozinho ou que NÃO PRECISA ou NÃO QUER MAIS o atendimento (\"já encontrou a diferença\", \"não "
+              "precisa mais de suporte\", \"pode encerrar\", \"desisti\"): pode concluir, e o CQS é 54; (d) DÚVIDA pura (pergunta sobre como o sistema funciona, sem erro para corrigir): a "
               "resposta registrada de forma clara e específica, com \"a dúvida do cliente foi esclarecida\" ou "
               "equivalente (menos o PEDIDO NEGADO, abaixo). Procure em TODO o histórico. NÃO conta: só a AÇÃO do "
               "analista, mesmo \"com êxito\" ou \"com "
@@ -619,7 +633,9 @@ CONTATO_CONCLUSAO = (" A conclusão precisa ter sido tratada com o cliente: o pe
                      "conclusão) OU a última interação antes dele precisa ter contato do cliente ou um print de "
                      "conversa com fala do CLIENTE; se nenhum dos dois tiver (contato = o próprio analista, usuário "
                      "interno ou não informado, sem esse print), NÃO conclua (pendência: \"Contato: a interação de "
-                     "conclusão não foi com o cliente\").")
+                     "conclusão não foi com o cliente\"). EXCEÇÃO: se o registro diz que o cliente não precisa ou não "
+                     "quer mais o suporte (\"cliente informou que não precisa mais de suporte\", \"desistiu\"), o "
+                     "contato não importa: pode concluir, com CQS 54.")
 
 
 CONTINUIDADE = """EXCEÇÃO - CONTINUIDADE EM OUTRO ATENDIMENTO: se o histórico mostra que o assunto que falta (pendência,
@@ -776,7 +792,8 @@ ANALISTA = mensagens da empresa (balões à direita). O analista costuma anexar 
 aceite. VALE como confirmação (mesmo que o contato daquela interação seja o próprio analista) a fala do
 CLIENTE que RESPONDE à solução ou à resposta dada: confirma o resultado ("deu certo", "funcionou",
 "resolveu", "consegui", "sim" respondendo se deu certo) ou, logo depois da solução ou da resposta
-COMPLETA, concorda ou agradece ("ok", "entendi", "obrigado"). NÃO vale: "ok" ou "obrigado" que só
+COMPLETA, concorda ou agradece ("ok", "entendi", "obrigado"); também vale o CLIENTE dizer que não precisa
+ou não quer mais o suporte ("não precisa mais", "pode encerrar", "desisti": CQS 54). NÃO vale: "ok" ou "obrigado" que só
 responde a um aviso ("o analista vai verificar", "aguarde"), a uma informação parcial ou a um pedido de
 teste ainda sem resultado ("tenta colocar", "vê se vai"); "aguardando"; pergunta do ANALISTA ("deu
 certo?") sem resposta do CLIENTE; print só com falas do ANALISTA. Pedido, problema ou reação negativa do
@@ -1654,8 +1671,10 @@ def ciclo(cfg, lite, client, manual=False):
                     continue
 
                 historico = montar_historico(inter, max_chars, prot, at.get("analista"), _internos)
-                # print de conversa com fala do cliente anexado na conclusão: comprova que ela foi com o cliente
-                if bloq_contato and print_do_cliente_na_conclusao(inter, prot, at.get("analista"), _internos):
+                # print de conversa com fala do cliente anexado na conclusão: comprova que ela foi com o cliente;
+                # cliente que dispensou o suporte: conclui com CQS 54 mesmo sem o cliente como contato (gerente)
+                if bloq_contato and (print_do_cliente_na_conclusao(inter, prot, at.get("analista"), _internos)
+                                     or cliente_dispensou(inter, at.get("analista"), _internos)):
                     bloq_contato, contato_concl = False, "cliente"
                 # só o CQS precisa ser refeito (catálogo mudou, ou "Sim" antigo sem CQS): prompt curto, análise mantida
                 if (ult and ult[0] == len(inter) and ult[3] == len(arquivos) and ult[4] == len(audios_pasta)

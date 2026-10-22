@@ -30,6 +30,13 @@ Painel Streamlit para os gerentes revisarem as sugestões (a IA aprende com essa
   revisão", nem nota interna de OUTRO usuário (ex.: devolução do revisor). A 26 entrou em 20/10: os analistas escrevem
   a conclusão nela; simulação nas 281 decisões do painel liberou 31 travas, 28 certas e 3 sem relação com contato.
   Obs.: o revisor humano concluía 95% desses casos (regra nova), então o "acerto real" cai nesses.
+- **Cliente dispensou o suporte** (regra do gerente, 22/10): registro de que o cliente não precisa ou não quer mais o
+  suporte ("cliente informou que não precisa mais de suporte", "desistiu") = pode concluir com **CQS 54**, mesmo que o
+  analista tenha analisado/orientado antes (`[cqs] regras`) e mesmo sem o cliente como contato da conclusão:
+  `cliente_dispensou()` (regex `_DISPENSA` na interação de conclusão ou no pedido de revisão) libera a trava de
+  contato, e no print a fala do cliente "não precisamos mais"/"desisti"/"pode encerrar" conta em `confirma_resultado`.
+  Teste com os 8 casos do painel que citam isso: todos com "não precisa mais de suporte" saíram Sim 54 (antes 344, 412
+  e 466 davam Não); 464 e 470 têm o mesmo registro e tinham sido devolvidos (rótulo antigo, antes da regra).
 - **Pedido de revisão (26)**: o prompt manda ler o texto dela como RESUMO DA CONCLUSÃO (o que foi feito e o resultado);
   antes mandava ignorá-la ("avalie o que veio antes"), o que causou 5 dos 6 erros de 19/10.
 - **Confirmação** (`_CONF_VALE`): vale (a) o OK do cliente em texto/áudio/print; (b) o analista registrar que o CLIENTE

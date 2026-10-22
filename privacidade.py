@@ -323,15 +323,19 @@ _WA_CAIXA = re.compile(r"(?i)digite uma mensagem")                     # caixa d
 
 # fala do cliente que confirma o resultado ou agradece. Um "ok" solto não basta (pode responder a um aviso, a uma
 # informação parcial ou a um pedido de teste ainda sem resultado: teste de 22/10). Usada só na trava de contato.
-_WA_CONFIRMA = re.compile(r"(?i)\b(deu (tudo )?certo|deu bom|funcionou|funcionando|resolveu|resolvid[oa]|"
-                          r"consegui|conseguimos|conseguiu|certinho|obrigad[oa]s?|obg|valeu|agrade\w+|entendi)\b")
+_WA_CONFIRMA = re.compile(r"(?i)\b(deu (tudo )?certo|deu bom|funcionou|funcionando|resolveu|resolvemos|resolvid[oa]|"
+                          r"consegui|conseguimos|conseguiu|certinho|obrigad[oa]s?|obg|valeu|agrade\w+|entendi|"
+                          r"pode encerrar|pode finalizar)\b")
 _WA_SEM_PROBLEMA = re.compile(r"(?i)\b(nenhum problema|sem problemas?|nenhum erro|sem erros?)\b")
+# cliente dispensa o suporte ("não precisamos mais", "não quero mais", "desisti"): pode concluir com CQS 54 (gerente, 22/10)
+_WA_DISPENSA = re.compile(r"(?i)\bn[ãa]o\s+(precis\w+|quer\w*)\s+mais\b|\bdesist\w+")
 
 
 def confirma_resultado(txt):
-    """A fala confirma o resultado ou agradece? ("deu certo", "resolveu", "consegui", "não tivemos nenhum problema",
-    "obrigado"); com negação antes ("não deu certo", "não consegui") não vale."""
-    if _WA_SEM_PROBLEMA.search(txt):
+    """A fala confirma o resultado, agradece ou dispensa o suporte? ("deu certo", "resolveu", "consegui", "não tivemos
+    nenhum problema", "obrigado", "não precisamos mais", "pode encerrar"); com negação antes ("não deu certo",
+    "não consegui", "não pode encerrar") não vale."""
+    if _WA_SEM_PROBLEMA.search(txt) or _WA_DISPENSA.search(txt):
         return True
     return any(not re.search(r"(?i)\bn[ãa]o\s+(\w+\s+)?$", txt[:m.start()]) for m in _WA_CONFIRMA.finditer(txt))
 

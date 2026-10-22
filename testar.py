@@ -269,7 +269,8 @@ def main():
                 bloq = exigir and contato_concl not in (None, "cliente") and not exclusivo
                 prot = prot_base.para_atendimento(at.get("cliente"))
                 historico = agente.montar_historico(inter, max_chars, prot, at.get("analista"), internos)
-                if bloq and agente.print_do_cliente_na_conclusao(inter, prot, at.get("analista"), internos):
+                if bloq and (agente.print_do_cliente_na_conclusao(inter, prot, at.get("analista"), internos)
+                             or agente.cliente_dispensou(inter, at.get("analista"), internos)):
                     bloq, contato_concl = False, "cliente"
                 atual = agente.extrair_atualizacoes(inter)
                 ex = agente.montar_exemplos(lite, cfg, prot_base, cqs_versao, agente.texto_consulta(at, inter), indice,

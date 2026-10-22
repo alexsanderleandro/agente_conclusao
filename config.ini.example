@@ -152,10 +152,12 @@ secundario = 55,56,59,60,65
 ignorar = 66,70
 ; regras da empresa para escolher o CQS (texto livre, uma por linha, com indentação); vão no prompt
 regras =
-    - CQS 54: só quando o analista NÃO auxiliou o cliente no sistema: resposta sobre assunto fora do sistema da
-      empresa, cliente desistiu, demanda resolvida pelo próprio cliente ou pela TI dele, andamento dado por outro
-      analista. Se o analista analisou, orientou, acessou remoto, testou/simulou, explicou ou ajustou algo, NÃO é
-      54: é no mínimo 55 (houve esforço do analista).
+    - CQS 54: cliente informou que NÃO PRECISA ou NÃO QUER MAIS o suporte (desistiu, não quer seguir, já resolveu
+      por conta própria ou com a TI dele, sem ser pela orientação do analista): conclua com 54, mesmo que o analista
+      tenha analisado ou orientado antes. Fora isso, 54 só quando o analista NÃO auxiliou o cliente no sistema:
+      resposta sobre assunto fora do sistema da empresa, andamento dado por outro analista. Se o analista analisou,
+      orientou, acessou remoto, testou/simulou, explicou ou ajustou algo, NÃO é 54: é no mínimo 55 (houve esforço
+      do analista).
     - CQS 65: atualização remota do sistema, completa ou parcial.
     - CQS 60 e 59: SÓ quando houve VISITA presencial ao cliente (ficha de visita, "presencial", "in loco",
       "visita"), inclusive atualização presencial: 60 se o cliente é de Juiz de Fora-MG, 59 se é de outra cidade
