@@ -36,11 +36,36 @@ Painel Streamlit para os gerentes revisarem as sugestões (a IA aprende com essa
   obteve o resultado, fez/testou/conseguiu ("o cliente realizou um teste e o sistema iniciou normalmente", "seguindo
   essa sequência a nota fechou"), ou resultado conferido no sistema dele ("nota transmitida com sucesso"); (c) o cliente
   dizer que resolveu sozinho/não precisa mais; (d) DÚVIDA pura respondida de forma clara ("a dúvida do cliente foi
-  esclarecida"). Não vale: só a ação do analista, mesmo "com êxito" ("cadastro realizado com êxito"), nem resultado sem
+  esclarecida"), exceto PEDIDO NEGADO (`_CONF_PEDIDO_NEGADO`, item próprio no prompt + 1º critério do
+  `[agente] criterio_conclusao`): pedido do cliente cuja resposta foi "não é possível"/"terá de ser manual"/RDM de
+  orçamento só conclui com o aceite dele depois da resposta (fala dele, ou o analista registrar que aceitou/confirmou,
+  inclusive em ligação ou reunião). Motivo do gerente no caso 437 (22/10); escondida dentro do (d) a IA ignorava,
+  precisou de item próprio com exemplo. Não vale: só a ação do analista, mesmo "com êxito" ("cadastro realizado com êxito"), nem resultado sem
   dizer quem verificou ("passou a ser exibido corretamente") em PROBLEMA do cliente (critério tirado das revisões de
   19/10, confirmadas no ERP). Em QUALQUER interação, inclusive no resumo da 26; sem exigir frase "explícita" do cliente
   (idem em `[agente] criterio_conclusao`). OCR lê as ÚLTIMAS `max_imagens_por_atendimento` imagens (a confirmação
   costuma estar nos últimos prints).
+- **Print de conversa do WhatsApp** (`privacidade.LeitorOCR.ler_print`, 21/10): o analista anexa o print com o aceite
+  do cliente. Detectado pelas cores (fundo `#F5F1EB`/`#EFEAE2`..., balão enviado `#D9FDD3`..., modo escuro também);
+  `image_to_data` dá a caixa de cada linha e a cor do balão decide quem falou: verde = ANALISTA (direita); branco com o
+  fundo da conversa ao lado e começando à ESQUERDA da área da conversa = CLIENTE. Sai na ordem da conversa:
+  `[Imagem N (conversa de WhatsApp lida por OCR): CLIENTE: "..." | ANALISTA: "..."]` (hora, marca de leitura, "Hoje",
+  "Digite uma mensagem" removidos; passou de `max_chars` fica o FIM; texto que não é balão, ex. tela do sistema no
+  mesmo print, vai em "outros textos"; print só com falas do analista sai com "(nenhuma fala do CLIENTE foi lida neste
+  print)", senão a IA "via" aceite que não existe). Outras imagens: OCR comum. Vale como confirmação (mesmo com o analista como
+  contato) a fala do CLIENTE que RESPONDE à solução: resultado ("deu certo", "consegui") ou "ok/obrigado/entendi"
+  logo depois da solução COMPLETA; não vale "ok" a aviso, a informação parcial ou a pedido de teste sem resultado,
+  nem "aguardando" (critério do gerente, 22/10). Print na interação de conclusão (ou no pedido de revisão) com fala do
+  cliente que confirma o resultado ou agradece (`privacidade.confirma_resultado`; "ok" solto não basta) libera a trava
+  de contato (`print_do_cliente_na_conclusao`, depois do `montar_historico`). Teste de 22/10 (71 casos do painel com
+  print, OCR comum × falas separadas): concordância 77% → 83% nas 3 rodadas com o leitor novo, "Não" indevido
+  11 → 5-6, "Sim" indevido 5 → 6-7 (1-5910473 e 1-1566122 erram sempre). RUÍDO: mesmo com temperatura 0, 12 dos 71
+  casos mudaram de decisão entre rodadas com prompts quase iguais (casos limítrofes do gpt-4.1-mini): diferença de
+  1-2 casos entre rodadas não prova nada; olhar o que se repete em várias rodadas. Liga/desliga:
+  `[privacidade] separar_falas_whatsapp` (entra na `versao_prompt`); teste: `testar.py --com-print [--ocr-simples]`
+  (casos do painel com print de WhatsApp, escolhidos só pelas cores; `--ocr-simples` = como era). Antes o OCR lia por
+  colunas e misturava as falas (casos 287, 291, 293, 353: aceite no print e IA disse Não; 437: print só do analista
+  e IA disse Sim).
 - **Continuidade em outro atendimento** (`[agente] continuidade_outro_atendimento = sim`): se o assunto que falta
   segue em OUTRO atendimento com o número informado, este pode ser concluído e o CQS sai do que foi feito até a
   transferência. A IA devolve `atendimento_continuidade`; o código confere (outro número, escrito no histórico, existe
@@ -92,7 +117,8 @@ Painel Streamlit para os gerentes revisarem as sugestões (a IA aprende com essa
   `python testar.py` = roda a decisão do agente num conjunto FIXO de casos reais para comparar antes x depois:
   `--painel` (casos revisados pelo gerente, verdade = decisão dele; 90 = 30 Não rejeitados + 30 Não aceitos + 30 Sim),
   `--repetir RODADA` (mesmos casos), `--regras ARQUIVO` (proposta sem gravar), `--listar` (sem IA),
-  `--comparar A B` (antes x depois, sem IA), `--modelo X`, `--sem-regras`, `--com-revisao`.
+  `--comparar A B` (antes x depois, sem IA), `--modelo X`, `--sem-regras`, `--com-revisao`, `--com-print`
+  (casos com print de WhatsApp), `--ocr-simples` (prints sem separar as falas), `--ids 437,386` (só essas avaliações).
   `python regras.py` = IA sintetiza as devoluções reais ("Não concluir quando...") e os "Não" do agente que o gerente
   rejeitou ("PODE CONCLUIR: ...") em regras_sugeridas.txt; na tela de regras as "PODE CONCLUIR" vão para a seção
   QUANDO PODE CONCLUIR (o agente apresenta com instrução própria) e "≈ parecida com" avisa regra já aprovada.

@@ -53,7 +53,8 @@ api_key_env = OPENAI_API_KEY
 limite_confianca = 0.8
 ; edite à vontade: é o critério que a IA usa
 criterio_conclusao =
-    - A última resposta do analista resolveu ou respondeu o que o cliente pediu.
+    - A última resposta do analista resolveu ou respondeu o que o cliente pediu. Se a resposta foi que o pedido NÃO é
+      possível (ou que terá de ser manual / por outro caminho), só conclua com o aceite do cliente (veja PEDIDO NEGADO).
     - Há confirmação da solução em qualquer interação (veja o que CONTA COMO CONFIRMAÇÃO: inclusive o resultado
       registrado pelo analista), ou o cliente conseguiu executar o que foi orientado.
     - Não há pendência aberta (cliente aguardando algo, analista prometeu retorno, etc.).
@@ -176,6 +177,9 @@ pseudonimizar_nomes = sim
 ler_imagens = sim
 tesseract_cmd = C:\Program Files\Tesseract-OCR\tesseract.exe
 ocr_idioma = por+eng
+; print de conversa do WhatsApp: separa as falas (CLIENTE à esquerda / ANALISTA à direita) pela cor e posição dos
+; balões; nao = OCR comum, que mistura as falas
+separar_falas_whatsapp = sim
 max_imagens_por_atendimento = 5
 
 [fichas]

@@ -7,6 +7,9 @@ ponto em que o caso foi avaliado. Não grava nada em avaliacoes; os resultados f
   python testar.py                     40 casos do ERP (20 devolvidos + 20 concluídos com CQS), sempre os mesmos
   python testar.py --painel            casos revisados pelo gerente no painel (verdade = decisão do gerente)
   python testar.py --painel --n 90     tamanho: 2/3 "Não" revisados (metade aceitos, metade rejeitados) + 1/3 "Sim"
+  python testar.py --com-print         casos revisados no painel com print de conversa do WhatsApp (pelas cores)
+  python testar.py --ids 437,386       só essas avaliações do painel (id da tabela avaliacoes)
+  python testar.py --ocr-simples       prints lidos com o OCR comum, sem separar as falas (para comparar)
   python testar.py --repetir RODADA    os mesmos casos de uma rodada anterior (comparação justa)
   python testar.py --regras ARQUIVO    outro arquivo de regras (proposta), sem gravar nas aprovadas
   python testar.py --listar            só mostra os casos escolhidos, sem chamar a IA
@@ -28,6 +31,7 @@ import agente
 import historico as hist
 import llm
 import rdm
+from privacidade import eh_print_conversa, extrair_pngs_rtf
 
 # iterações até o pedido de revisão (mesmas colunas da query [queries] interacoes do agente)
 SQL_INTER = """
@@ -89,6 +93,21 @@ def amostra_painel(lite, n):
     return [("painel", i) for i in escolha]
 
 
+def amostra_com_print(lite, conn, cfg):
+    """Casos revisados pelo gerente no painel em que as imagens que o agente lê (as últimas max_imagens) incluem print
+    de conversa do WhatsApp (detecção só pelas cores, sem OCR nem IA)."""
+    max_imgs = cfg.getint("privacidade", "max_imagens_por_atendimento", fallback=5)
+    out = []
+    for ref, aid, qtd in lite.execute(f"SELECT id, atendimento_id, qtd_interacoes FROM avaliacoes WHERE {_U} "
+                                      "AND status IN ('aceita','rejeitada') ORDER BY id").fetchall():
+        emp, num, desd = (int(x) for x in aid.split("-"))
+        inter = agente.consultar(conn, cfg["queries"]["interacoes"], (emp, num, desd))[:qtd]
+        pngs = [p for r in inter for p in extrair_pngs_rtf(r.get("texto"))][-max_imgs:]
+        if any(eh_print_conversa(p) for p in pngs):
+            out.append(("painel", ref))
+    return out
+
+
 def casos_da_rodada(lite, rodada):
     """Os mesmos casos de uma rodada anterior (as antigas, sem ref_id, eram do ERP)."""
     out = []
@@ -141,6 +160,9 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--n", type=int, default=None, help="tamanho do conjunto (ERP: 40; painel: 90)")
     ap.add_argument("--painel", action="store_true", help="casos revisados pelo gerente no painel")
+    ap.add_argument("--com-print", action="store_true", help="casos do painel com print de conversa do WhatsApp")
+    ap.add_argument("--ids", default=None, help="só essas avaliações do painel, separadas por vírgula (ex.: 437,386)")
+    ap.add_argument("--ocr-simples", action="store_true", help="prints com o OCR comum, sem separar as falas")
     ap.add_argument("--repetir", default=None, metavar="RODADA", help="os mesmos casos de uma rodada anterior")
     ap.add_argument("--regras", default=None, metavar="ARQUIVO", help="outro arquivo de regras (proposta)")
     ap.add_argument("--listar", action="store_true", help="só mostra os casos, sem chamar a IA")
@@ -163,6 +185,14 @@ def main():
     cqs_desde = cfg.get("aprendizado", "cqs_desde", fallback="").strip() or "2000-01-01"
     if a.repetir:
         casos = casos_da_rodada(lite, a.repetir)
+    elif a.ids:
+        casos = [("painel", int(x)) for x in a.ids.split(",") if x.strip()]
+    elif a.com_print:
+        _c = pyodbc.connect(cfg["banco"]["conn_string"], readonly=True, timeout=30)
+        try:
+            casos = amostra_com_print(lite, _c, cfg)
+        finally:
+            _c.close()
     elif a.painel:
         casos = amostra_painel(lite, a.n or 90)
     else:
@@ -194,6 +224,9 @@ def main():
         variante.append(f"revisao:{cfg.get('agente', 'modelo_revisao', fallback='') or cfg['agente']['modelo']}")
     if a.sem_revisao:
         cfg["agente"]["segunda_revisao"] = "nao"
+    if a.ocr_simples:
+        cfg["privacidade"]["separar_falas_whatsapp"] = "nao"
+        variante.append("ocr-simples")
     if a.sem_regras:
         variante.append("sem-regras")
     elif a.regras:
@@ -236,6 +269,8 @@ def main():
                 bloq = exigir and contato_concl not in (None, "cliente") and not exclusivo
                 prot = prot_base.para_atendimento(at.get("cliente"))
                 historico = agente.montar_historico(inter, max_chars, prot, at.get("analista"), internos)
+                if bloq and agente.print_do_cliente_na_conclusao(inter, prot, at.get("analista"), internos):
+                    bloq, contato_concl = False, "cliente"
                 atual = agente.extrair_atualizacoes(inter)
                 ex = agente.montar_exemplos(lite, cfg, prot_base, cqs_versao, agente.texto_consulta(at, inter), indice,
                                             excluir_aid=aid, codigos=vigentes)

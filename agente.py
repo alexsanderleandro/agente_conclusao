@@ -136,6 +136,12 @@ def limpar(txt):
     return re.sub(r"\s+", " ", txt).strip()
 
 
+def separar_falas(cfg):
+    """[privacidade] separar_falas_whatsapp = sim (padrão): print de conversa do WhatsApp sai com as falas separadas
+    (CLIENTE / ANALISTA); nao = OCR comum, como antes (o testar.py --ocr-simples usa para comparar)."""
+    return cfg.getboolean("privacidade", "separar_falas_whatsapp", fallback=True)
+
+
 class Protecao:
     """Aplica as camadas de LGPD em tudo que vai para a IA (config.ini, seção [privacidade])."""
 
@@ -143,10 +149,13 @@ class Protecao:
         self.mascarar = cfg.getboolean("privacidade", "mascarar_dados", fallback=True)
         self.pseudo_on = cfg.getboolean("privacidade", "pseudonimizar_nomes", fallback=True)
         self.max_imgs = cfg.getint("privacidade", "max_imagens_por_atendimento", fallback=5)
+        self.separar_falas = separar_falas(cfg)
         self.usuarios = list(usuarios)
         self.ocr = ocr
         self.imagens_lidas = 0
         self.pular_imagens = 0           # as primeiras ficam de fora quando passam do limite (ver montar_historico)
+        self.print_cliente = False       # a última chamada de texto_imagens achou print de conversa em que o cliente
+        self.prints_cliente = set()      # confirma o resultado ou agradece; índices dessas interações (montar_historico)
         self.pseudo = Pseudonimizador(self.usuarios if self.pseudo_on else ())
         self.transcritor = None          # áudios (definido no ciclo, se [audios] transcrever = sim)
         self.mapa_unidade = {}
@@ -158,6 +167,8 @@ class Protecao:
         p.__dict__.update(self.__dict__)
         p.imagens_lidas = 0
         p.pular_imagens = 0
+        p.print_cliente = False
+        p.prints_cliente = set()
         p.audios_lidos = []
         p.pseudo = Pseudonimizador(self.usuarios, cliente) if self.pseudo_on else Pseudonimizador()
         return p
@@ -169,6 +180,7 @@ class Protecao:
         return self.pseudo.ocultar(txt)
 
     def texto_imagens(self, texto_bruto):
+        self.print_cliente = False
         if not (self.ocr and self.ocr.ok):
             return ""
         partes = []
@@ -178,10 +190,16 @@ class Protecao:
             if self.pular_imagens > 0:
                 self.pular_imagens -= 1
                 continue
-            lido = self.ocr.ler(png)
-            if lido:
+            # print de conversa do WhatsApp sai com as falas separadas (CLIENTE / ANALISTA); o resto, OCR comum
+            r = (self.ocr.ler_print(png) if self.separar_falas and hasattr(self.ocr, "ler_print")
+                 else {"conversa": False, "texto": self.ocr.ler(png), "cliente": False, "confirma": False})
+            if r["texto"]:
                 self.imagens_lidas += 1
-                partes.append(f" [Imagem {self.imagens_lidas} (texto lido por OCR): {lido}]")
+                if r["conversa"]:
+                    self.print_cliente = self.print_cliente or r.get("confirma", False)
+                    partes.append(f" [Imagem {self.imagens_lidas} (conversa de WhatsApp lida por OCR): {r['texto']}]")
+                else:
+                    partes.append(f" [Imagem {self.imagens_lidas} (texto lido por OCR): {r['texto']}]")
         return "".join(partes)
 
 
@@ -390,29 +408,57 @@ def resumo_no_pedido(r):
     return len(re.findall(r"[^\W\d_]{3,}", _FECHO_PEDIDO.sub(" ", limpar(r.get("texto"))))) >= 6
 
 
-def contato_conclusao(rows, analista=None, internos=frozenset()):
-    """Classificação do contato da conclusão. 'cliente' quando o pedido de revisão (tipo 26) traz o resumo da
-    conclusão com contato do cliente (os analistas costumam escrever a conclusão nele); senão, o contato da última
-    interação antes dele que não seja vazia (sem texto e sem imagem), nem só "enviado para revisão", nem nota interna
-    de OUTRO usuário com ele mesmo ou outro interno como contato (ex.: a devolução do revisor). None quando a query
-    [queries] interacoes não traz o NomeContato ou não há interação assim."""
-    if not rows or "contato" not in rows[-1]:
+def _indice_pedido(rows):
+    """Índice do pedido de revisão (a última interação, tipo 26) em rows, ou None."""
+    if not rows:
         return None
-    tem_tipo = "codtipo" in rows[-1]
-    pedido = rows[-1] if not tem_tipo or str(rows[-1].get("codtipo")) == "26" else None
-    if (pedido and resumo_no_pedido(pedido)
-            and classificar_contato(pedido.get("contato"), (pedido.get("autor"), analista), internos) == "cliente"):
-        return "cliente"
-    antes = [r for r in rows if str(r.get("codtipo")) != "26"] if tem_tipo else rows[:-1]
-    for r in reversed(antes):
+    return len(rows) - 1 if "codtipo" not in rows[-1] or str(rows[-1].get("codtipo")) == "26" else None
+
+
+def _indice_conclusao(rows, analista=None, internos=frozenset()):
+    """Índice da interação de conclusão: a última antes do pedido de revisão que não seja vazia (sem texto e sem
+    imagem), nem só "enviado para revisão", nem nota interna de OUTRO usuário com ele mesmo ou outro interno como
+    contato (ex.: a devolução do revisor). None se não houver."""
+    tem_tipo = bool(rows) and "codtipo" in rows[-1]
+    for i in range(len(rows) - 1, -1, -1):
+        r = rows[i]
+        if (str(r.get("codtipo")) == "26") if tem_tipo else i == len(rows) - 1:
+            continue
         autor, txt = r.get("autor"), limpar(r.get("texto"))
         if (not re.search(r"[^\W\d_]{3,}", txt) and not extrair_pngs_rtf(r.get("texto"))) or _SO_PEDIDO_REVISAO.match(txt):
             continue
         if (analista and autor and classificar_contato(autor, (analista,), internos) != "analista"
                 and classificar_contato(r.get("contato"), (autor,), internos) in ("analista", "interno")):
             continue
-        return classificar_contato(r.get("contato"), (autor, analista), internos)
+        return i
     return None
+
+
+def contato_conclusao(rows, analista=None, internos=frozenset()):
+    """Classificação do contato da conclusão. 'cliente' quando o pedido de revisão (tipo 26) traz o resumo da
+    conclusão com contato do cliente (os analistas costumam escrever a conclusão nele); senão, o contato da
+    interação de conclusão (_indice_conclusao). None quando a query [queries] interacoes não traz o NomeContato ou
+    não há interação assim. Print de conversa com fala do cliente na conclusão: ver print_do_cliente_na_conclusao."""
+    if not rows or "contato" not in rows[-1]:
+        return None
+    p = _indice_pedido(rows)
+    if (p is not None and resumo_no_pedido(rows[p]) and
+            classificar_contato(rows[p].get("contato"), (rows[p].get("autor"), analista), internos) == "cliente"):
+        return "cliente"
+    i = _indice_conclusao(rows, analista, internos)
+    return None if i is None else classificar_contato(rows[i].get("contato"), (rows[i].get("autor"), analista),
+                                                      internos)
+
+
+def print_do_cliente_na_conclusao(rows, prot, analista=None, internos=frozenset()):
+    """O analista anexou na conclusão (o pedido de revisão ou a interação de conclusão) um print de conversa do
+    WhatsApp em que o cliente confirma o resultado ou agradece (privacidade.confirma_resultado; um "ok" solto não
+    basta): o print comprova que a conclusão foi com o cliente, seja qual for o contato registrado. Depende de
+    montar_historico já ter lido as imagens (prot.prints_cliente)."""
+    achados = getattr(prot, "prints_cliente", None)
+    if not achados:
+        return False
+    return bool(achados & ({_indice_pedido(rows), _indice_conclusao(rows, analista, internos)} - {None}))
 
 
 def pendencia_contato(classe):
@@ -471,7 +517,7 @@ def montar_historico(rows, max_chars, prot=None, analista=None, internos=frozens
         # passou do limite de imagens: lê as ÚLTIMAS (a confirmação do cliente costuma estar nos últimos prints)
         total = sum(len(extrair_pngs_rtf(r.get("texto"))) for r in rows)
         prot.pular_imagens = max(0, total - prot.max_imgs)
-    for r in rows:
+    for i, r in enumerate(rows):
         d = r.get("data")
         d = d.strftime("%d/%m/%Y %H:%M") if hasattr(d, "strftime") else str(d)
         autor = r.get("autor", "")
@@ -481,6 +527,8 @@ def montar_historico(rows, max_chars, prot=None, analista=None, internos=frozens
             rot = f" ({ROTULO_CONTATO[classificar_contato(r.get('contato'), (autor, analista), internos)]})"
         if prot:
             texto += prot.texto_imagens(r.get("texto"))
+            if prot.print_cliente:
+                prot.prints_cliente.add(i)
             texto += prot.texto_audios(r.get("texto"), texto)
             autor, texto = prot.proteger(autor), prot.proteger(texto)
         linhas.append(f"[{d}] tipo {r.get('tipo', '')} - {autor}{rot}: {texto}")
@@ -513,7 +561,8 @@ _CONF_VALE = ("CONTA COMO CONFIRMAÇÃO (qualquer uma basta; o gerente aceita to
               "resolveu sozinho ou que não precisa mais do atendimento (\"já encontrou a diferença\", \"não precisa mais "
               "de suporte\"); (d) DÚVIDA pura (pergunta sobre como o sistema funciona, sem erro para corrigir): a "
               "resposta registrada de forma clara e específica, com \"a dúvida do cliente foi esclarecida\" ou "
-              "equivalente. Procure em TODO o histórico. NÃO conta: só a AÇÃO do analista, mesmo \"com êxito\" ou \"com "
+              "equivalente (menos o PEDIDO NEGADO, abaixo). Procure em TODO o histórico. NÃO conta: só a AÇÃO do "
+              "analista, mesmo \"com êxito\" ou \"com "
               "sucesso\" (\"cadastro realizado com êxito\", \"demonstrado\", \"orientado\", \"ajustado\", \"corrigido\"), "
               "nem resultado que não diga quem verificou (\"passou a funcionar\", \"passou a ser exibido corretamente\") "
               "quando o atendimento trata de um PROBLEMA do cliente.")
@@ -521,13 +570,25 @@ _CONF_VALE = ("CONTA COMO CONFIRMAÇÃO (qualquer uma basta; o gerente aceita to
 _CONF_ONDE = (" A confirmação pode estar em QUALQUER interação, inclusive no resumo do pedido de revisão, e não precisa ser "
               "uma frase do próprio cliente quando o analista registrou o resultado obtido pelo cliente.")
 
+# motivo do gerente no caso 437 (22/10): "não consta o aceite do cliente, nem digitado, nem no print"
+_CONF_PEDIDO_NEGADO = (" PEDIDO NEGADO: se o cliente pediu algo (alterar, excluir, um recurso, um ajuste), mesmo em forma "
+                       "de pergunta, e a resposta foi que NÃO é possível ou que terá de ser feito de outro jeito "
+                       "(manualmente, por outro caminho, com RDM de orçamento), informar o cliente NÃO basta: só conclua "
+                       "com o ACEITE do cliente DEPOIS dessa resposta (fala dele no texto, em áudio ou como CLIENTE num "
+                       "print, concordando, ou o analista registrar que o cliente aceitou ou confirmou, inclusive em "
+                       "ligação ou reunião). Ex.: pediu para apagar um e-mail do cadastro, o analista respondeu \"não é "
+                       "possível, teria que ser manual\" e o print só tem a fala do ANALISTA = pode_concluir=false "
+                       "(pendência: \"Confirmar com o cliente o aceite da resposta\").")
+
 CONFIRMACAO = {
     "sim": ("CONFIRMAÇÃO DO CLIENTE É OBRIGATÓRIA: só conclua se o histórico mostrar que o problema foi resolvido "
-            "ou que o cliente conseguiu executar o que foi orientado. " + _CONF_VALE + _CONF_ONDE + " Sem nenhuma dessas "
+            "ou que o cliente conseguiu executar o que foi orientado. " + _CONF_VALE + _CONF_ONDE + _CONF_PEDIDO_NEGADO
+            + " Sem nenhuma dessas "
             "evidências, NÃO conclua (pendência: \"Confirmar com o cliente se ...\"). Esta regra prevalece sobre "
             "qualquer critério acima que aceite concluir sem retorno do cliente."),
     "erros": ("CONFIRMAÇÃO DO CLIENTE: quando o atendimento trata de ERRO, FALHA ou PROBLEMA no sistema/ambiente, só conclua "
-              "com confirmação de que foi resolvido. " + _CONF_VALE + _CONF_ONDE + " Quando é DÚVIDA ou ORIENTAÇÃO, basta "
+              "com confirmação de que foi resolvido. " + _CONF_VALE + _CONF_ONDE + _CONF_PEDIDO_NEGADO
+              + " Quando é DÚVIDA ou ORIENTAÇÃO, basta "
               "a orientação estar registrada de forma clara e específica (não precisa de confirmação)."),
 }
 
@@ -551,12 +612,14 @@ def texto_confirmacao(cfg):
 CONTATO = ("CONTATO DE CADA INTERAÇÃO: cada linha do histórico traz \"(contato: ...)\", com quem o analista falou naquela "
            "interação. \"contato: cliente\" é uma pessoa do cliente; \"o próprio analista\" ou \"usuário interno\" quer dizer "
            "que ninguém do cliente participou (registro interno). Confirmação ou aceite DITO pelo cliente só vale em "
-           "interação com contato do cliente; o resultado registrado pelo analista (inclusive no resumo do pedido de "
-           "revisão) vale mesmo que o contato daquela linha seja o próprio analista.")
+           "interação com contato do cliente ou numa fala CLIENTE de print de conversa do WhatsApp; o resultado "
+           "registrado pelo analista (inclusive no resumo do pedido de revisão) vale mesmo que o contato daquela "
+           "linha seja o próprio analista.")
 CONTATO_CONCLUSAO = (" A conclusão precisa ter sido tratada com o cliente: o pedido de revisão (quando traz o resumo da "
-                     "conclusão) OU a última interação antes dele precisa ter contato do cliente; se nenhum dos dois "
-                     "tiver (contato = o próprio analista, usuário interno ou não informado), NÃO conclua (pendência: "
-                     "\"Contato: a interação de conclusão não foi com o cliente\").")
+                     "conclusão) OU a última interação antes dele precisa ter contato do cliente ou um print de "
+                     "conversa com fala do CLIENTE; se nenhum dos dois tiver (contato = o próprio analista, usuário "
+                     "interno ou não informado, sem esse print), NÃO conclua (pendência: \"Contato: a interação de "
+                     "conclusão não foi com o cliente\").")
 
 
 CONTINUIDADE = """EXCEÇÃO - CONTINUIDADE EM OUTRO ATENDIMENTO: se o histórico mostra que o assunto que falta (pendência,
@@ -706,8 +769,19 @@ Ao citar essas pessoas ou dados no resumo, use exatamente o mesmo marcador.
 Trechos "[Imagem N (texto lido por OCR): ...]" são o texto extraído de prints anexados ao atendimento;
 podem conter erros de leitura. Uma mensagem de erro, aviso ou solicitação visível num print, sem
 solução registrada depois, é pendência. A ordem importa: erro num print seguido do registro da correção
-NÃO é pendência. Uma resposta do cliente num print ("deu certo", "funcionou", "ok, obrigado") VALE como
-confirmação.
+NÃO é pendência.
+Trechos "[Imagem N (conversa de WhatsApp lida por OCR): ...]" são prints da conversa com o cliente, já
+separados por quem falou e na ordem da conversa: CLIENTE = mensagens do cliente (balões à esquerda);
+ANALISTA = mensagens da empresa (balões à direita). O analista costuma anexar esse print como prova do
+aceite. VALE como confirmação (mesmo que o contato daquela interação seja o próprio analista) a fala do
+CLIENTE que RESPONDE à solução ou à resposta dada: confirma o resultado ("deu certo", "funcionou",
+"resolveu", "consegui", "sim" respondendo se deu certo) ou, logo depois da solução ou da resposta
+COMPLETA, concorda ou agradece ("ok", "entendi", "obrigado"). NÃO vale: "ok" ou "obrigado" que só
+responde a um aviso ("o analista vai verificar", "aguarde"), a uma informação parcial ou a um pedido de
+teste ainda sem resultado ("tenta colocar", "vê se vai"); "aguardando"; pergunta do ANALISTA ("deu
+certo?") sem resposta do CLIENTE; print só com falas do ANALISTA. Pedido, problema ou reação negativa do
+CLIENTE no fim da conversa, sem resposta depois, é pendência. A fala do cliente não muda o CQS: conta o
+que o analista fez (agradecer ou dizer que deu certo depois da orientação NÃO é ter resolvido sozinho).
 
 Áudios: trechos "[Áudio N (transcrição automática): ...]" e a seção "ÁUDIOS DO ATENDIMENTO" são
 áudios de WhatsApp transcritos automaticamente (podem ter erros e não indicam quem falou; deduza pelo
@@ -1037,10 +1111,12 @@ def temperatura(cfg):
 
 
 def versao_prompt(cfg, catalogo=()):
-    """Identifica a versão do prompt (texto fixo + seções do código + modelo + temperatura), para medir o acerto por
-    versão: mudou regra, critério, catálogo, modelo ou temperatura, muda a versão."""
+    """Identifica a versão do prompt (texto fixo + seções do código + modelo + temperatura + leitura das conversas
+    nos prints), para medir o acerto por versão: mudou regra, critério, catálogo, modelo, temperatura ou o jeito de
+    ler os prints, muda a versão."""
     base = "|".join([montar_system(cfg, catalogo), cfg["agente"].get("modelo", ""), str(temperatura(cfg)),
-                     json.dumps(SO_ATUALIZACAO_IA, sort_keys=True, ensure_ascii=False)])
+                     json.dumps(SO_ATUALIZACAO_IA, sort_keys=True, ensure_ascii=False),
+                     "falas" if separar_falas(cfg) else ""])
     return hashlib.sha1(base.encode("utf-8")).hexdigest()[:10]
 
 
@@ -1578,6 +1654,9 @@ def ciclo(cfg, lite, client, manual=False):
                     continue
 
                 historico = montar_historico(inter, max_chars, prot, at.get("analista"), _internos)
+                # print de conversa com fala do cliente anexado na conclusão: comprova que ela foi com o cliente
+                if bloq_contato and print_do_cliente_na_conclusao(inter, prot, at.get("analista"), _internos):
+                    bloq_contato, contato_concl = False, "cliente"
                 # só o CQS precisa ser refeito (catálogo mudou, ou "Sim" antigo sem CQS): prompt curto, análise mantida
                 if (ult and ult[0] == len(inter) and ult[3] == len(arquivos) and ult[4] == len(audios_pasta)
                         and precisa_cqs and exclusivo != "puro"
