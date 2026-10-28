@@ -2,15 +2,17 @@
 Proteção de dados (LGPD) antes de enviar qualquer texto para a IA.
 
 Camada 1 - mascaramento: CPF, CNPJ, chave NF-e, e-mail, telefone, cartão, IP e senhas viram
-           marcadores ([CPF], [SENHA]...). Nomes de usuários do ERP e do cliente viram
-           pseudônimos ([USUARIO_156], [CLIENTE]) e voltam ao nome real só aqui, localmente,
-           no resumo/justificativa que a IA devolve.
+           marcadores ([CPF], [SENHA]...). Nomes de usuários do ERP, do cliente e das pessoas do
+           cliente registradas como contato viram pseudônimos ([USUARIO_156], [CLIENTE],
+           [CONTATO_CLIENTE_1]) e voltam ao nome real só aqui, localmente, no resumo/justificativa
+           que a IA devolve.
 Camada 2 - imagens: os PNG embutidos no RichText são lidos por OCR local (Tesseract).
            A imagem NUNCA é enviada; só o texto lido, já mascarado.
 """
 import io
 import logging
 import re
+import unicodedata
 
 log = logging.getLogger("agente")
 
@@ -73,6 +75,15 @@ def mascarar_pii(txt):
 _L = "A-Za-z0-9\u00C0-\u00FF"          # letras/dígitos (com acento); "_" e "." contam como separador
 _ANTES, _DEPOIS = rf"(?<![{_L}])", rf"(?![{_L}])"
 _SUFIXOS = re.compile(r"(?i)[\s,.-]+(ltda|me|epp|eireli|s\.?\s?a|s/a|cia|comercio|com[eé]rcio)\.?$")
+# NomeContato que não é nome de pessoa: não vira [CONTATO_CLIENTE_n]
+_NAO_E_NOME = frozenset("""cliente clientes financeiro fiscal compras vendas loja recepcao gerente gerencia escritorio
+empresa contabilidade contador contadora ti suporte caixa setor dono dona proprietario proprietaria responsavel
+administrativo adm comercial sr sra senhor senhora deposito estoque faturamento diretoria secretaria rh matriz
+filial unidade nao informado usuario""".split())
+
+
+def _sem_acento(s):
+    return unicodedata.normalize("NFKD", str(s or "")).encode("ascii", "ignore").decode().lower()
 
 
 def _variantes_cliente(nome):
@@ -97,7 +108,9 @@ class Pseudonimizador:
 
     def __init__(self, usuarios=(), cliente=None):
         self.para_nome = {}           # marcador -> nome real (para reidentificar)
-        variantes = []                # (regex, marcador)
+        self._contatos = {}           # 1º nome do contato do cliente (sem acento) -> marcador
+        variantes = []                # (prioridade, regex, marcador): 0 nomes compostos e cliente, 1 contato do
+                                      # cliente (1º nome), 2 1º nome e login de uma palavra dos usuários
         primeiros = {}
         for u in usuarios:
             nome = str(u.get("nomeusuario") or "").strip()
@@ -108,21 +121,26 @@ class Pseudonimizador:
             self.para_nome[marc] = nome
             for v in {nome, nome.replace(".", " "), nome.replace("_", " ")}:
                 if len(v) >= 3:
-                    variantes.append((re.compile(rf"(?i){_ANTES}{re.escape(v)}{_DEPOIS}"), marc))
+                    variantes.append((0 if re.search(r"[\s._]", v) else 2,
+                                      re.compile(rf"(?i){_ANTES}{re.escape(v)}{_DEPOIS}"), marc))
             p = re.split(r"[.\s_]", nome)[0]
             if len(p) >= 4:
                 primeiros.setdefault(p.capitalize(), set()).add(marc)
         # primeiro nome só se não for ambíguo; case-sensitive (evita trocar palavras comuns)
         for p, marcs in primeiros.items():
             if len(marcs) == 1:
-                variantes.append((re.compile(rf"{_ANTES}{re.escape(p)}{_DEPOIS}"), next(iter(marcs))))
+                variantes.append((2, re.compile(rf"{_ANTES}{re.escape(p)}{_DEPOIS}"), next(iter(marcs))))
         if cliente and len(str(cliente).strip()) >= 3:
             c = str(cliente).strip()
             self.para_nome["[CLIENTE]"] = c
             for v in _variantes_cliente(c):
-                variantes.append((re.compile(rf"(?i){_ANTES}{re.escape(v)}{_DEPOIS}"), "[CLIENTE]"))
-        # mais longos primeiro ("Rafael Freitas" antes de "Rafael")
-        self._variantes = sorted(variantes, key=lambda x: -len(x[0].pattern))
+                variantes.append((0, re.compile(rf"(?i){_ANTES}{re.escape(v)}{_DEPOIS}"), "[CLIENTE]"))
+        self._variantes = variantes
+        self._ordenar()
+
+    def _ordenar(self):
+        # pela prioridade e, nela, mais longos primeiro ("Rafael Freitas" antes de "Rafael")
+        self._variantes.sort(key=lambda x: (x[0], -len(x[1].pattern)))
 
     def adicionar(self, nome, marcador="[CLIENTE]"):
         """Variante extra (ex.: nome da pasta do cliente na rede, "GET", "MinasFreios").
@@ -131,22 +149,47 @@ class Pseudonimizador:
         if len(nome) < 3:
             return
         flag = "" if len(nome) <= 4 else "(?i)"
-        self._variantes.append((re.compile(rf"{flag}{_ANTES}{re.escape(nome)}{_DEPOIS}"), marcador))
-        self._variantes.sort(key=lambda x: -len(x[0].pattern))
+        self._variantes.append((0, re.compile(rf"{flag}{_ANTES}{re.escape(nome)}{_DEPOIS}"), marcador))
+        self._ordenar()
         if marcador == "[CLIENTE]":
             self.para_nome.setdefault(marcador, nome)
+
+    def adicionar_contato(self, nome):
+        """Pessoa do cliente registrada como contato da interação (NomeContato) -> [CONTATO_CLIENTE_n]: o nome não
+        vai para a IA e ela sabe que quem falou ou fez foi o cliente (antes o 1º nome ia em claro, ou virava
+        [USUARIO_n] quando coincidia com um usuário: 93 de 193 decisões de 19 a 27/10). O 1º nome (como registrado,
+        Capitalizado ou, com 5+ letras, em maiúsculas; não troca "clara" minúsculo) passa na frente do 1º nome e do
+        login de uma palavra dos usuários; nome composto de usuário e o nome do cliente continuam antes.
+        Devolve o marcador (None se não parecer nome de pessoa)."""
+        nome = re.sub(r"\s+", " ", str(nome or "")).strip()
+        partes = [p for p in re.split(r"[\s._\-/()]+", nome) if p]
+        if not partes or len(partes[0]) < 3 or not partes[0].isalpha() or _sem_acento(partes[0]) in _NAO_E_NOME:
+            return None
+        primeiro = partes[0]
+        marc = self._contatos.get(_sem_acento(primeiro))
+        if marc is None:
+            marc = self._contatos[_sem_acento(primeiro)] = f"[CONTATO_CLIENTE_{len(self._contatos) + 1}]"
+            self.para_nome[marc] = nome
+        novos = [(1, rf"{_ANTES}{re.escape(v)}{_DEPOIS}") for v in
+                 {primeiro, primeiro.capitalize()} | ({primeiro.upper()} if len(primeiro) >= 5 else set())]
+        if len(partes) > 1:
+            novos.append((0, rf"(?i){_ANTES}{re.escape(nome)}{_DEPOIS}"))
+        ja = {(rx.pattern, m) for _, rx, m in self._variantes}
+        self._variantes += [(pr, re.compile(p), marc) for pr, p in novos if (p, marc) not in ja]
+        self._ordenar()
+        return marc
 
     def ocultar(self, txt):
         if not txt:
             return txt
-        for rx, marc in self._variantes:
+        for _, rx, marc in self._variantes:
             txt = rx.sub(marc, txt)
         return txt
 
     def reidentificar(self, txt):
         if not txt or not isinstance(txt, str):
             return txt
-        return re.sub(r"\[(USUARIO_[\w-]+|CLIENTE)\]",
+        return re.sub(r"\[(USUARIO_[\w-]+|CLIENTE|CONTATO_CLIENTE_\d+)\]",
                       lambda m: self.para_nome.get(m.group(0), m.group(0)), txt)
 
 

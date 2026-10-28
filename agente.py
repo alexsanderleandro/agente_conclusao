@@ -375,16 +375,19 @@ def _partes(s):
     return [t for t in re.split(r"[\s._\-]+", _norm(s)) if t]
 
 
-def classificar_contato(contato, proximos=(), internos=frozenset()):
+def classificar_contato(contato, proximos=(), internos=frozenset(), primeiro_nome=False):
     """Com quem o analista falou: 'analista' (o autor da interação ou o analista do atendimento, pelo login
-    "Vinicius.Souza" ou só pelo nome "Vinícius"), 'interno' (login de outro usuário), 'nao_informado' ou 'cliente'.
+    "Vinicius.Souza" ou "Vinicius S"), 'interno' (login de outro usuário), 'nao_informado' ou 'cliente'.
+    Só o 1º nome ("Vinicius" com login "Vinicius.Souza") é o cliente (regra do gerente, caso 550 de 27/10);
+    primeiro_nome=True volta a tratar como o próprio usuário (nota interna de outro usuário, _indice_conclusao).
     Só a classificação vai para a IA, nunca o nome do contato (LGPD)."""
     ct = _partes(contato)
     if not ct:
         return "nao_informado"
     for p in proximos:
         pt = _partes(p)
-        if pt and ct[0] == pt[0] and (len(ct) == 1 or (len(pt) > 1 and pt[1].startswith(ct[1]))):
+        if pt and ct[0] == pt[0] and (ct == pt or (len(ct) == 1 and primeiro_nome)
+                                      or (len(ct) > 1 and len(pt) > 1 and pt[1].startswith(ct[1]))):
             return "analista"
     # login de uma palavra só ("ramon", "daniel") coincide com o nome de contatos do cliente: só conta como interno
     # o login com ponto ("Fulano.Sobrenome") ou com nome completo
@@ -428,7 +431,8 @@ def _indice_conclusao(rows, analista=None, internos=frozenset()):
         if (not re.search(r"[^\W\d_]{3,}", txt) and not extrair_pngs_rtf(r.get("texto"))) or _SO_PEDIDO_REVISAO.match(txt):
             continue
         if (analista and autor and classificar_contato(autor, (analista,), internos) != "analista"
-                and classificar_contato(r.get("contato"), (autor,), internos) in ("analista", "interno")):
+                and classificar_contato(r.get("contato"), (autor,), internos, primeiro_nome=True) in ("analista",
+                                                                                                    "interno")):
             continue
         return i
     return None
@@ -438,7 +442,9 @@ def contato_conclusao(rows, analista=None, internos=frozenset()):
     """Classificação do contato da conclusão. 'cliente' quando o pedido de revisão (tipo 26) traz o resumo da
     conclusão com contato do cliente (os analistas costumam escrever a conclusão nele); senão, o contato da
     interação de conclusão (_indice_conclusao). None quando a query [queries] interacoes não traz o NomeContato ou
-    não há interação assim. Print de conversa com fala do cliente na conclusão: ver print_do_cliente_na_conclusao."""
+    não há interação assim. Print de conversa com fala do cliente na conclusão: ver print_do_cliente_na_conclusao.
+    (Testado em 28/10 o contato da 26 com resumo decidir sozinho: travaria 23 "Sim" desde 01/10, o gerente concluiu
+    20; ficou como está.)"""
     if not rows or "contato" not in rows[-1]:
         return None
     p = _indice_pedido(rows)
@@ -531,6 +537,14 @@ def montar_historico(rows, max_chars, prot=None, analista=None, internos=frozens
         # passou do limite de imagens: lê as ÚLTIMAS (a confirmação do cliente costuma estar nos últimos prints)
         total = sum(len(extrair_pngs_rtf(r.get("texto"))) for r in rows)
         prot.pular_imagens = max(0, total - prot.max_imgs)
+    if prot and prot.pseudo_on:
+        # pessoa do cliente registrada como contato -> [CONTATO_CLIENTE_n] no texto, OCR, áudio e fichas (LGPD); fica
+        # de fora o contato com o mesmo 1º nome do autor/analista (ambíguo: segue o pseudônimo do usuário)
+        for r in rows:
+            proximos = (r.get("autor"), analista)
+            if ("contato" in r and classificar_contato(r.get("contato"), proximos, internos) == "cliente"
+                    and not any(_partes(p)[:1] == _partes(r.get("contato"))[:1] for p in proximos if p)):
+                prot.pseudo.adicionar_contato(r.get("contato"))
     for i, r in enumerate(rows):
         d = r.get("data")
         d = d.strftime("%d/%m/%Y %H:%M") if hasattr(d, "strftime") else str(d)
@@ -566,7 +580,8 @@ CRITERIO_REGISTRO = """    - O registro precisa deixar claro O QUE o cliente ped
 
 _CONF_VALE = ("CONTA COMO CONFIRMAÇÃO (qualquer uma basta; o gerente aceita todas): "
               "(a) o cliente disse, em texto, áudio ou PRINT (trecho de imagem lido por OCR), que resolveu, funcionou, "
-              "conseguiu ou deu certo, ou respondeu a orientação com OK/agradecimento (\"ok, obrigado\", \"deu tudo "
+              "conseguiu ou deu certo, mesmo com ressalva leve (\"aparentemente resolveu sim\", \"a princípio deu tudo "
+              "certo\"), ou respondeu a orientação com OK/agradecimento (\"ok, obrigado\", \"deu tudo "
               "certo\"); (b) o analista registrou que o CLIENTE obteve o resultado, fez, testou ou conseguiu (\"o cliente "
               "realizou um teste e o sistema iniciou normalmente\", \"seguindo essa sequência a nota fechou no valor "
               "desejado\", \"a cliente conseguiu emitir a nota\", \"testado junto com o cliente e funcionou\", \"cliente "
@@ -575,7 +590,11 @@ _CONF_VALE = ("CONTA COMO CONFIRMAÇÃO (qualquer uma basta; o gerente aceita to
               "resolveu sozinho ou que NÃO PRECISA ou NÃO QUER MAIS o atendimento (\"já encontrou a diferença\", \"não "
               "precisa mais de suporte\", \"pode encerrar\", \"desisti\"): pode concluir, e o CQS é 54; (d) DÚVIDA pura (pergunta sobre como o sistema funciona, sem erro para corrigir): a "
               "resposta registrada de forma clara e específica, com \"a dúvida do cliente foi esclarecida\" ou "
-              "equivalente (menos o PEDIDO NEGADO, abaixo). Procure em TODO o histórico. NÃO conta: só a AÇÃO do "
+              "equivalente (menos o PEDIDO NEGADO, abaixo); (e) atendimento em MONITORAMENTO encerrado porque o erro "
+              "não voltou a ocorrer no cliente depois da correção ou atualização (\"não foi mais apresentado erro "
+              "após a atualização\", \"o problema não voltou a ocorrer\"); (f) ficha de visita ou ordem de serviço "
+              "ASSINADA pelo cliente (registrada no texto, anexada ou na seção FICHAS DE VISITA), sem pendência "
+              "escrita nela: a assinatura é o aceite. Procure em TODO o histórico. NÃO conta: só a AÇÃO do "
               "analista, mesmo \"com êxito\" ou \"com "
               "sucesso\" (\"cadastro realizado com êxito\", \"demonstrado\", \"orientado\", \"ajustado\", \"corrigido\"), "
               "nem resultado que não diga quem verificou (\"passou a funcionar\", \"passou a ser exibido corretamente\") "
@@ -780,7 +799,9 @@ O campo "resumo" é o texto que o analista vai registrar no atendimento, em port
 Baseie-se só no que está no histórico; não invente fatos.
 
 Privacidade: alguns dados foram ocultados e aparecem como marcadores entre colchetes, por exemplo
-[CPF], [CNPJ], [SENHA], [EMAIL], [TELEFONE], [CLIENTE], [USUARIO_12]. Não tente adivinhar o conteúdo.
+[CPF], [CNPJ], [SENHA], [EMAIL], [TELEFONE], [CLIENTE], [USUARIO_12], [CONTATO_CLIENTE_1]. Não tente
+adivinhar o conteúdo. [USUARIO_n] é um usuário da empresa (analista, suporte); [CONTATO_CLIENTE_n] é uma
+PESSOA DO CLIENTE: o que ela disse, fez, testou ou conseguiu foi o CLIENTE.
 Ao citar essas pessoas ou dados no resumo, use exatamente o mesmo marcador.
 Trechos "[Imagem N (texto lido por OCR): ...]" são o texto extraído de prints anexados ao atendimento;
 podem conter erros de leitura. Uma mensagem de erro, aviso ou solicitação visível num print, sem
@@ -791,7 +812,8 @@ separados por quem falou e na ordem da conversa: CLIENTE = mensagens do cliente 
 ANALISTA = mensagens da empresa (balões à direita). O analista costuma anexar esse print como prova do
 aceite. VALE como confirmação (mesmo que o contato daquela interação seja o próprio analista) a fala do
 CLIENTE que RESPONDE à solução ou à resposta dada: confirma o resultado ("deu certo", "funcionou",
-"resolveu", "consegui", "sim" respondendo se deu certo) ou, logo depois da solução ou da resposta
+"resolveu", "consegui", "sim" respondendo se deu certo, inclusive com ressalva leve: "aparentemente resolveu
+sim", "a princípio deu tudo certo") ou, logo depois da solução ou da resposta
 COMPLETA, concorda ou agradece ("ok", "entendi", "obrigado"); também vale o CLIENTE dizer que não precisa
 ou não quer mais o suporte ("não precisa mais", "pode encerrar", "desisti": CQS 54). NÃO vale: "ok" ou "obrigado" que só
 responde a um aviso ("o analista vai verificar", "aguarde"), a uma informação parcial ou a um pedido de
@@ -1697,8 +1719,9 @@ def ciclo(cfg, lite, client, manual=False):
                         txt = ""
                     nome_arq = os.path.basename(caminho)
                     nomes_fichas.append(nome_arq)
-                    # o nome do arquivo não vai para a IA (costuma ter o nome do cliente)
-                    fichas_txt.append(f"--- Ficha {len(nomes_fichas)} de {d:%d/%m/%Y} ---\n"
+                    # o nome do arquivo não vai para a IA (costuma ter o nome do cliente); só se está assinada
+                    assinada = " (arquivo marcado como assinada)" if re.search(r"(?i)assinad", nome_arq) else ""
+                    fichas_txt.append(f"--- Ficha {len(nomes_fichas)} de {d:%d/%m/%Y}{assinada} ---\n"
                                       + (prot.proteger(txt)[:max_ficha] or "(não foi possível ler o conteúdo)"))
                 # áudios da pasta que não foram citados nas iterações
                 audios_txt = []

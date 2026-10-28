@@ -21,15 +21,22 @@ Painel Streamlit para os gerentes revisarem as sugestões (a IA aprende com essa
   Salvaguarda no código: "Sim" com pendências listadas vira "Não".
 - **Contato da interação** (`AtendimentoIteracao.NomeContato`): cada linha do histórico vai para a IA com
   "(contato: cliente | o próprio analista | usuário interno | não informado)", nunca com o nome (LGPD).
-  Analista = autor da interação ou analista do atendimento, pelo login ("Vinicius.Souza") ou só o 1º nome ("Vinícius");
-  interno = login exato de outro usuário, só se tiver ponto ou nome completo (30 logins de uma palavra, ex. "ramon",
-  coincidem com nomes de clientes). Com `[agente] exigir_contato_cliente = sim`, a interação de conclusão com contato
-  que não é o cliente = "Não" forçado no código + pendência "Contato: ...". Conclusão com o cliente = a própria 26
-  quando traz o resumo da conclusão (texto além do fecho "Atendimento enviado para revisão/finalizado",
-  `resumo_no_pedido`) com contato do cliente, OU a última antes da 26 que não seja vazia, nem só "enviado para
-  revisão", nem nota interna de OUTRO usuário (ex.: devolução do revisor). A 26 entrou em 20/10: os analistas escrevem
-  a conclusão nela; simulação nas 281 decisões do painel liberou 31 travas, 28 certas e 3 sem relação com contato.
+  Analista = autor da interação ou analista do atendimento, pelo login ("Vinicius.Souza", "Vinicius S"); só o 1º nome
+  ("Vinicius" com login "Vinicius.Souza") = CLIENTE (regra do gerente, caso 550 de 27/10; antes contava como analista;
+  simulação nas 437 decisões desde 01/10: libera 13 travas, 6 "Sim" que o gerente concluiu e 7 sem efeito).
+  Exceção: nota interna de OUTRO usuário com o 1º nome dele como contato continua interna (`primeiro_nome=True` em
+  `_indice_conclusao`). Interno = login exato de outro usuário, só se tiver ponto ou nome completo (30 logins de uma
+  palavra, ex. "ramon", coincidem com nomes de clientes). Com `[agente] exigir_contato_cliente = sim`, a interação de
+  conclusão com contato que não é o cliente = "Não" forçado no código + pendência "Contato: ...". Conclusão com o
+  cliente = a própria 26 quando traz o resumo da conclusão (texto além do fecho "Atendimento enviado para
+  revisão/finalizado", `resumo_no_pedido`) com contato do cliente, OU a última antes da 26 que não seja vazia, nem só
+  "enviado para revisão", nem nota interna de OUTRO usuário (ex.: devolução do revisor). A 26 entrou em 20/10: os
+  analistas escrevem a conclusão nela; simulação nas 281 decisões do painel liberou 31 travas, 28 certas.
   Obs.: o revisor humano concluía 95% desses casos (regra nova), então o "acerto real" cai nesses.
+  Testado e NÃO aplicado (28/10): o contato da 26 com resumo decidir sozinho (o gerente barrou 506, 545, 558, mas
+  travaria 23 "Sim" desde 01/10 e ele tinha concluído 20; desde 23/10, 3 a 3); 26 só com o fecho e contato do cliente
+  liberar a trava (490; 5 de 5 certos) e pós-venda encerrado "conforme alinhamento com o supervisor" concluir com 54
+  (517, 522; no ERP os 3 de 23/10 foram concluídos com 54): o gerente não quis.
 - **Cliente dispensou o suporte** (regra do gerente, 22/10): registro de que o cliente não precisa ou não quer mais o
   suporte ("cliente informou que não precisa mais de suporte", "desistiu") = pode concluir com **CQS 54**, mesmo que o
   analista tenha analisado/orientado antes (`[cqs] regras`) e mesmo sem o cliente como contato da conclusão:
@@ -43,7 +50,10 @@ Painel Streamlit para os gerentes revisarem as sugestões (a IA aprende com essa
   obteve o resultado, fez/testou/conseguiu ("o cliente realizou um teste e o sistema iniciou normalmente", "seguindo
   essa sequência a nota fechou"), ou resultado conferido no sistema dele ("nota transmitida com sucesso"); (c) o cliente
   dizer que resolveu sozinho/não precisa mais; (d) DÚVIDA pura respondida de forma clara ("a dúvida do cliente foi
-  esclarecida"), exceto PEDIDO NEGADO (`_CONF_PEDIDO_NEGADO`, item próprio no prompt + 1º critério do
+  esclarecida"); (e) monitoramento encerrado porque o erro não voltou ("não foi mais apresentado erro após a
+  atualização", 537); (f) ficha de visita/OS assinada pelo cliente (554; ficha da rede com "Assinada" no nome do
+  arquivo vai com "(arquivo marcado como assinada)" no cabeçalho, sem o nome). Ressalva leve do cliente também vale
+  ("aparentemente resolveu sim", "a princípio deu tudo certo": 485, 28/10). Exceção: PEDIDO NEGADO (`_CONF_PEDIDO_NEGADO`, item próprio no prompt + 1º critério do
   `[agente] criterio_conclusao`): pedido do cliente cuja resposta foi "não é possível"/"terá de ser manual"/RDM de
   orçamento só conclui com o aceite dele depois da resposta (fala dele, ou o analista registrar que aceitou/confirmou,
   inclusive em ligação ou reunião). Motivo do gerente no caso 437 (22/10); escondida dentro do (d) a IA ignorava,
@@ -98,7 +108,10 @@ Painel Streamlit para os gerentes revisarem as sugestões (a IA aprende com essa
 - **CQS**: principal só quando "Sim"; secundário por registro de atualização (analista do registro; repetido no texto
   do pedido de revisão conta uma vez). Listas em `[cqs] principal/secundario` (63 excluído do catálogo em 16/10;
   59 = Visita fora de JF, 60 = Visita dentro de JF, 65 = Atualização remota completa ou parcial). `[cqs] regras` só
-  com o que é da empresa (54 só sem auxílio; analisou/orientou/testou = 55+; 65; 60/59 só com visita presencial,
+  com o que é da empresa (54 só sem auxílio ou cliente que já resolveu sozinho, ex. "ao retornar a ligação, informou
+  que já resolveu" (526), e conseguir DEPOIS da orientação não é resolver sozinho (546); analisou/orientou/mostrou/
+  testou = 55+; atualização de módulo = 55+ (560); 65 como principal só se o atendimento foi apenas a atualização, com
+  suporte + atualização o principal é o do suporte e o 65 fica no secundário (486); 60/59 só com visita presencial,
   remoto nunca é visita) — sem repetir o catálogo.
   Cidade do cliente (`Clientes.Cidade/Estado` na query candidatos) vai para a IA só como "Local do cliente: dentro/fora
   de Juiz de Fora" (`[cqs] cidade_local`). Catálogo mudou → só o CQS dos "Sim" pendentes é refeito com prompt curto
@@ -148,6 +161,13 @@ Painel Streamlit para os gerentes revisarem as sugestões (a IA aprende com essa
 ## LGPD
 - Só texto mascarado vai para a IA (CPF, CNPJ, chave NF-e, e-mail, telefone, cartão, IP, senha).
 - Nomes de usuários/cliente pseudonimizados (`[USUARIO_cod]`, `[CLIENTE]`) e reidentificados localmente.
+- Pessoa do cliente registrada como contato (NomeContato classificado como cliente) vira `[CONTATO_CLIENTE_n]` no
+  texto, OCR, áudio e fichas (`Pseudonimizador.adicionar_contato`, chamado no `montar_historico`; 28/10). Antes o
+  1º nome ia em claro (81 de 193 decisões de 19 a 27/10) ou virava `[USUARIO_n]` quando coincidia com um login (12;
+  no 497 a IA leu "[USUARIO_119] informou que a nota foi importada" como usuário interno e negou). Prioridade: nome
+  composto de usuário e nome do cliente > 1º nome do contato > 1º nome/login de uma palavra dos usuários. Fica de
+  fora: palavra genérica ("Financeiro", `_NAO_E_NOME`), até 2 letras, minúsculo (não troca "clara") e contato com o
+  mesmo 1º nome do autor/analista (ambíguo).
 - Imagens (PNG do RichText), áudios (.ogg) e fichas (PDF/foto) são lidos **localmente** (Tesseract,
   faster-whisper, pypdfium2); nunca saem do servidor.
 

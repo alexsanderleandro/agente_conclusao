@@ -534,7 +534,7 @@ c4.metric("Aguardando sua revisão", int((df.status_geral == "pendente").sum()),
 c5.metric("Não autorizados a concluir", int((df.pode_concluir == 0).sum()))
 
 _bt1, _bt2 = st.columns([1, 3])
-if _bt1.button(f"🔄 Buscar próximos {int(_novo_max)}", type="primary"):
+if _bt1.button(f"🔄 Analisar próximos {int(_novo_max)}", type="primary"):
     with st.spinner(f"Avaliando até {int(_novo_max)} atendimentos... (pode levar alguns minutos)"):
         st.session_state["ultima_busca"] = buscar_proximos(_novo_max)
         st.session_state["exibir"] = "ultima"
