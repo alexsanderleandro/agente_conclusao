@@ -160,6 +160,10 @@ regras =
       da empresa, andamento dado por outro analista. Se o analista analisou, orientou, mostrou como fazer, acessou
       remoto, testou/simulou, explicou ou ajustou algo, NÃO é 54: é no mínimo 55 (houve esforço do analista).
       Atualização ou instalação de MÓDULO pedida pelo cliente (ex.: atualizar o CSSecretaria) é no mínimo 55.
+      Também é 54 quando o registro NÃO descreve nenhuma ação do analista no sistema: o cliente resolveu depois que
+      o analista só retornou o contato ou perguntou se o problema persistia ("ainda persiste?"), a causa foi externa
+      (internet, rede, energia, equipamento do cliente) e ele voltou a usar sozinho, ou o analista só repassou um
+      serial/liberação de versão a outra pessoa. Nesses casos não escreva "após o suporte" no resumo.
     - CQS 65: atualização remota do sistema, completa ou parcial. Como CQS PRINCIPAL, só quando o atendimento foi
       apenas a atualização; se houve suporte (erro, dúvida, análise) e a atualização fez parte da solução, o
       principal é o do suporte (no mínimo 55) e a atualização fica só no CQS secundário do registro.
