@@ -37,6 +37,17 @@ Painel Streamlit para os gerentes revisarem as sugestões (a IA aprende com essa
   travaria 23 "Sim" desde 01/10 e ele tinha concluído 20; desde 23/10, 3 a 3); 26 só com o fecho e contato do cliente
   liberar a trava (490; 5 de 5 certos) e pós-venda encerrado "conforme alinhamento com o supervisor" concluir com 54
   (517, 522; no ERP os 3 de 23/10 foram concluídos com 54): o gerente não quis.
+  Testado e NÃO aplicado (05 e 09/11): reforço da confirmação "se o registro diz que o cliente conseguiu
+  fazer/emitir/sincronizar/acessar, isso JÁ É a confirmação" (`_CONF_ONDE`). Os "Não" só por texto (sem trava de
+  contato) acertam 72% (18 de 25 desde 28/10) e os erros são desse tipo (611, 621, 622, 674, 723, 726; 658 e 659 são
+  PEDIDO NEGADO e o gerente não quis ajustar). Teste de 09/11, 26 "Não" desde 28/10 (8 erros + 18 acertos): base 69%
+  (18 de 18 devolvidos mantidos); com o reforço 65% nas 2 rodadas (14 e 15 de 18): ganha 674, 726 e 621, mas cria
+  3-4 "Sim" indevidos (1-9316878-0, 1-1591428-0, 1-5910664-0, 1-1591271-0) e o 723 não vira. Na 1ª vez (05/11, 30
+  casos) também foi 2 ganhos x 2 perdas. NÃO tentar de novo sem mudar a abordagem.
+  Estado do acerto (09/11): versão 030f56cb6b análise 38 de 40, CQS 30 de 31; desde 28/10, "Sim" da IA concluído no
+  ERP em 97% (112/115) e "Não" devolvido em 84% (43/51). Pendência por contato acerta 91% (20/22). CQS 55 em vez de
+  56 é o erro de CQS mais comum (IA usa 56 em 1,6% dos "Sim", o ERP lança ~4,5%): o catálogo já cobre migração de
+  servidor e API de boleto e os exemplos do painel corrigem (738 saiu 56 depois do 700), então sem regra no ini.
 - **Cliente dispensou o suporte** (regra do gerente, 22/10): registro de que o cliente não precisa ou não quer mais o
   suporte ("cliente informou que não precisa mais de suporte", "desistiu") = pode concluir com **CQS 54**, mesmo que o
   analista tenha analisado/orientado antes (`[cqs] regras`) e mesmo sem o cliente como contato da conclusão:
@@ -112,7 +123,10 @@ Painel Streamlit para os gerentes revisarem as sugestões (a IA aprende com essa
   que já resolveu" (526), e conseguir DEPOIS da orientação não é resolver sozinho (546); analisou/orientou/mostrou/
   testou = 55+; atualização de módulo = 55+ (560); 65 como principal só se o atendimento foi apenas a atualização, com
   suporte + atualização o principal é o do suporte e o 65 fica no secundário (486); 60/59 só com visita presencial,
-  remoto nunca é visita) — sem repetir o catálogo.
+  remoto nunca é visita; 54 também quando o registro NÃO descreve ação do analista no sistema: o cliente resolveu
+  depois de um simples retorno/"ainda persiste?", causa externa como internet/rede/energia, ou o analista só
+  repassou serial/liberação de versão — 05/11: 663 e 667 passaram a 54, 583 e 661 seguem 55; 721 saiu 54 e o
+  gerente mudou para 55 porque o analista exportou o certificado e validou, vigiar excesso) — sem repetir o catálogo.
   Cidade do cliente (`Clientes.Cidade/Estado` na query candidatos) vai para a IA só como "Local do cliente: dentro/fora
   de Juiz de Fora" (`[cqs] cidade_local`). Catálogo mudou → só o CQS dos "Sim" pendentes é refeito com prompt curto
   (`reclassificar_cqs`/`refazer_so_cqs`, análise mantida). Exemplos de CQS valem enquanto os códigos existirem
