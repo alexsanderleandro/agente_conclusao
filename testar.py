@@ -173,6 +173,8 @@ def main():
     ap.add_argument("--com-revisao", action="store_true", help="liga a 2ª revisão (para comparar)")
     ap.add_argument("--sem-revisao", action="store_true", help="desliga a 2ª revisão")
     ap.add_argument("--modelo-revisao", default=None, help="modelo da 2ª revisão (liga a 2ª revisão)")
+    ap.add_argument("--verificar", action="store_true", help="liga a verificação do \"Não\" só por confirmação")
+    ap.add_argument("--modelo-verificacao", default=None, help="modelo da verificação (liga a verificação)")
     a = ap.parse_args()
 
     cfg = agente.ler_cfg()
@@ -224,6 +226,11 @@ def main():
         variante.append(f"revisao:{cfg.get('agente', 'modelo_revisao', fallback='') or cfg['agente']['modelo']}")
     if a.sem_revisao:
         cfg["agente"]["segunda_revisao"] = "nao"
+    if a.verificar or a.modelo_verificacao:
+        cfg["agente"]["verificar_confirmacao"] = "sim"
+        if a.modelo_verificacao:
+            cfg["agente"]["modelo_verificacao"] = a.modelo_verificacao
+        variante.append(f"verifica:{cfg.get('agente', 'modelo_verificacao', fallback='') or cfg['agente']['modelo']}")
     if a.ocr_simples:
         cfg["privacidade"]["separar_falas_whatsapp"] = "nao"
         variante.append("ocr-simples")

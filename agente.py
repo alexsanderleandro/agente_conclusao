@@ -439,18 +439,18 @@ def _indice_conclusao(rows, analista=None, internos=frozenset()):
 
 
 def contato_conclusao(rows, analista=None, internos=frozenset()):
-    """Classificação do contato da conclusão. 'cliente' quando o pedido de revisão (tipo 26) traz o resumo da
-    conclusão com contato do cliente (os analistas costumam escrever a conclusão nele); senão, o contato da
-    interação de conclusão (_indice_conclusao). None quando a query [queries] interacoes não traz o NomeContato ou
-    não há interação assim. Print de conversa com fala do cliente na conclusão: ver print_do_cliente_na_conclusao.
-    (Testado em 28/10 o contato da 26 com resumo decidir sozinho: travaria 23 "Sim" desde 01/10, o gerente concluiu
-    20; ficou como está.)"""
+    """Classificação do contato da conclusão. Pedido de revisão (tipo 26) com o resumo da conclusão (os analistas
+    costumam escrever a conclusão nele): o contato DELE decide, mesmo que a interação anterior (abertura "Ticket N",
+    queixa) tenha sido com o cliente (regra do gerente, 27/10: 506, 545, 558, 561, 566; 12/11: 754, 776, 806 e 586
+    voltaram a ser "Sim" indevido; simulação de 28/10 a 12/11: 4 corrigidos x 2 perdidos). Só com o fecho padrão: o
+    contato da interação de conclusão (_indice_conclusao). None quando a query [queries] interacoes não traz o
+    NomeContato ou não há interação assim. Print de conversa com fala do cliente na conclusão: ver
+    print_do_cliente_na_conclusao."""
     if not rows or "contato" not in rows[-1]:
         return None
     p = _indice_pedido(rows)
-    if (p is not None and resumo_no_pedido(rows[p]) and
-            classificar_contato(rows[p].get("contato"), (rows[p].get("autor"), analista), internos) == "cliente"):
-        return "cliente"
+    if p is not None and resumo_no_pedido(rows[p]):
+        return classificar_contato(rows[p].get("contato"), (rows[p].get("autor"), analista), internos)
     i = _indice_conclusao(rows, analista, internos)
     return None if i is None else classificar_contato(rows[i].get("contato"), (rows[i].get("autor"), analista),
                                                       internos)
@@ -648,11 +648,12 @@ CONTATO = ("CONTATO DE CADA INTERAÇÃO: cada linha do histórico traz \"(contat
            "interação com contato do cliente ou numa fala CLIENTE de print de conversa do WhatsApp; o resultado "
            "registrado pelo analista (inclusive no resumo do pedido de revisão) vale mesmo que o contato daquela "
            "linha seja o próprio analista.")
-CONTATO_CONCLUSAO = (" A conclusão precisa ter sido tratada com o cliente: o pedido de revisão (quando traz o resumo da "
-                     "conclusão) OU a última interação antes dele precisa ter contato do cliente ou um print de "
-                     "conversa com fala do CLIENTE; se nenhum dos dois tiver (contato = o próprio analista, usuário "
-                     "interno ou não informado, sem esse print), NÃO conclua (pendência: \"Contato: a interação de "
-                     "conclusão não foi com o cliente\"). EXCEÇÃO: se o registro diz que o cliente não precisa ou não "
+CONTATO_CONCLUSAO = (" A conclusão precisa ter sido tratada com o cliente: se o pedido de revisão traz o resumo da "
+                     "conclusão, o contato DELE precisa ser o cliente (mesmo que a interação anterior tenha sido com "
+                     "o cliente); se ele é só o fecho (\"atendimento enviado para revisão\"), vale a última interação "
+                     "antes dele. Sem contato do cliente nessa interação (contato = o próprio analista, usuário "
+                     "interno ou não informado) e sem print de conversa com fala do CLIENTE confirmando, NÃO conclua "
+                     "(pendência: \"Contato: a interação de conclusão não foi com o cliente\"). EXCEÇÃO: se o registro diz que o cliente não precisa ou não "
                      "quer mais o suporte (\"cliente informou que não precisa mais de suporte\", \"desistiu\"), o "
                      "contato não importa: pode concluir, com CQS 54.")
 
@@ -1155,7 +1156,9 @@ def versao_prompt(cfg, catalogo=()):
     ler os prints, muda a versão."""
     base = "|".join([montar_system(cfg, catalogo), cfg["agente"].get("modelo", ""), str(temperatura(cfg)),
                      json.dumps(SO_ATUALIZACAO_IA, sort_keys=True, ensure_ascii=False),
-                     "falas" if separar_falas(cfg) else ""])
+                     "falas" if separar_falas(cfg) else "",
+                     ("verifica:" + cfg.get("agente", "modelo_verificacao", fallback="") + SYSTEM_VERIFICA)
+                     if cfg.getboolean("agente", "verificar_confirmacao", fallback=False) else ""])
     return hashlib.sha1(base.encode("utf-8")).hexdigest()[:10]
 
 
@@ -1275,6 +1278,63 @@ def segunda_revisao(client, cfg, atendimento, historico, prot=None, fichas_txt="
     return bool(r.get("devolver")) and bool(motivos) and certeza >= limite, motivos, tin, tout
 
 
+SYSTEM_VERIFICA = """Você confere UM ponto de um atendimento de suporte de um ERP. A 1ª avaliação disse NÃO, só por falta de
+confirmação do cliente. Diga se o histórico JÁ registra que o resultado foi obtido.
+
+{vale}
+
+NÃO é resultado obtido: orientação que o cliente ainda vai executar ("foi orientado a...", "o cliente irá testar"), só a
+ação do analista ("realizado o ajuste", "atualizado", "corrigido"), "ok" a aviso ou a informação parcial, pedido do
+cliente cuja resposta foi "não é possível"/"terá de ser manual" sem aceite dele depois, dúvida nova ou problema que
+continua. Na dúvida, confirmado=false.
+
+Responda SOMENTE com JSON: {{"confirmado": true|false, "frase": "trecho COPIADO LITERALMENTE do histórico que prova o
+resultado (vazio se confirmado=false)"}}
+Privacidade: dados ocultados aparecem como [CPF], [CLIENTE], [USUARIO_12]...; não tente adivinhar."""
+
+
+def verificar_confirmacao(client, cfg, atendimento, historico, prot=None, fichas_txt="", audios_txt=""):
+    """2ª chamada só para "Não" por falta de confirmação: o histórico já registra o resultado? A IA cita a frase e o
+    código confere que ela existe no histórico (âncora). Retorna (frase ou None, tokens_in, tokens_out).
+    [agente] verificar_confirmacao = sim|nao, modelo_verificacao = (opcional)"""
+    assunto = prot.proteger(atendimento.get("assunto", "")) if prot else atendimento.get("assunto", "")
+    user = f"Assunto: {assunto}\n\nHISTÓRICO:\n{historico}"
+    if fichas_txt:
+        user += f"\n\nFICHAS DE VISITA:\n{fichas_txt}"
+    if audios_txt:
+        user += f"\n\nÁUDIOS:\n{audios_txt}"
+    modelo = cfg.get("agente", "modelo_verificacao", fallback="").strip() or cfg["agente"]["modelo"]
+    texto, tin, tout = llm.chamar(cfg["agente"]["provider"], client, modelo,
+                                  SYSTEM_VERIFICA.format(vale=_CONF_VALE), user, 300, temperatura=temperatura(cfg))
+    m = re.search(r"\{.*\}", texto, re.S)
+    try:
+        r = json.loads(m.group(0)) if m else {}
+    except ValueError:
+        r = {}
+    frase = str(r.get("frase") or "").strip()
+    alvo = re.sub(r"\s+", " ", _norm(frase)).strip(" .\"'")
+    base = re.sub(r"\s+", " ", _norm(historico + " " + fichas_txt + " " + audios_txt))
+    if r.get("confirmado") is True and len(alvo) >= 15 and alvo in base:
+        return frase, tin, tout
+    return None, tin, tout
+
+
+def aplicar_verificacao(res, client, cfg, atendimento, historico, prot=None, fichas_txt="", audios_txt=""):
+    """Se a 1ª avaliação disse Não SÓ por falta de confirmação (nenhuma outra pendência) e a verificação acha a frase
+    que prova o resultado, vira Sim (pendências limpas). Retorna (tokens_in, tokens_out, frase)."""
+    if not cfg.getboolean("agente", "verificar_confirmacao", fallback=False) or res.get("pode_concluir"):
+        return 0, 0, None
+    pends = [p.strip() for p in str(res.get("pendencias") or "").splitlines()
+             if p.strip() and not re.fullmatch(_SEM_PEND, p.strip())]
+    if not pends or not all(hist.so_confirmacao(p) for p in pends):
+        return 0, 0, None
+    frase, tin, tout = verificar_confirmacao(client, cfg, atendimento, historico, prot, fichas_txt, audios_txt)
+    if frase:
+        res["pode_concluir"], res["pendencias"] = True, ""
+        res["justificativa"] = (f'[Confirmação no registro: "{frase}"] ' + str(res.get("justificativa") or "")).strip()
+    return tin, tout, frase
+
+
 def aplicar_segunda_revisao(res, client, cfg, atendimento, historico, prot=None, fichas_txt="", audios_txt="",
                             rdms_txt=""):
     """Se a 1ª avaliação disse Sim (sem pendência), roda a 2ª revisão; se ela devolver, vira Não. Retorna tokens."""
@@ -1378,6 +1438,20 @@ def decidir(client, cfg, conn, at, inter, historico, catalogo, por_cod, exemplos
                   "conclusão sem contato com o cliente"):
             log.warning("Atend %s: IA disse concluir mas a interação de conclusão não foi com o cliente "
                         "(contato: %s); marcado como Não", aid, contato_concl)
+    if not exclusivo and not continuidade and not pend_rdm and not bloq_contato:
+        # "Não" só por falta de confirmação: a verificação cita a frase que prova o resultado (âncora no histórico)
+        i, o, _frase = aplicar_verificacao(res, client, cfg, at, historico, prot, fichas_txt, audios_txt)
+        tin, tout = tin + i, tout + o
+        if _frase:
+            log.info("Atend %s: Não só por confirmação virou Sim, o histórico já registra o resultado", aid)
+            if not res.get("cqs"):   # a IA não classificou o "Não": CQS com o prompt curto (análise mantida)
+                try:
+                    rc, i, o = reclassificar_cqs(client, cfg, at, historico, catalogo, atualizacoes, prot,
+                                                 res.get("resumo") or "")
+                    res["cqs"], res["cqs_atualizacoes"] = rc.get("cqs"), rc.get("cqs_atualizacoes") or []
+                    tin, tout = tin + i, tout + o
+                except Exception as e:
+                    log.warning("Atend %s: não consegui classificar o CQS após a verificação: %s", aid, e)
     if not exclusivo:   # só registro de atualização: a regra já decidiu, não tem o que revisar
         i, o = aplicar_segunda_revisao(res, client, cfg, at, historico, prot, fichas_txt, audios_txt, rdms_txt)
         tin, tout = tin + i, tout + o

@@ -48,6 +48,20 @@ Painel Streamlit para os gerentes revisarem as sugestões (a IA aprende com essa
   ERP em 97% (112/115) e "Não" devolvido em 84% (43/51). Pendência por contato acerta 91% (20/22). CQS 55 em vez de
   56 é o erro de CQS mais comum (IA usa 56 em 1,6% dos "Sim", o ERP lança ~4,5%): o catálogo já cobre migração de
   servidor e API de boleto e os exemplos do painel corrigem (738 saiu 56 depois do 700), então sem regra no ini.
+  Contato da 26 com resumo DECIDE a trava (12/11, regra do gerente de 27/10 reaplicada; `contato_conclusao`): se a 26
+  traz o resumo da conclusão, o contato dela precisa ser o cliente, mesmo que a interação anterior (abertura/queixa)
+  tenha sido com o cliente; só com o fecho segue valendo a última antes dela. Simulação 28/10 a 12/11: trava 586, 754,
+  776 e 806 (os que o gerente barrou) e perde 590 e 679 (4 x 2). Continuidade, dispensa e print do cliente continuam
+  liberando.
+  **Verificação da confirmação** (12/11, `[agente] verificar_confirmacao = sim`, `modelo_verificacao` vazio = `modelo`;
+  `verificar_confirmacao`/`aplicar_verificacao` em `agente.py`): 2ª chamada curta SÓ para "Não" cujas pendências são
+  todas falta de confirmação (`hist.so_confirmacao`), sem trava de contato/RDM/continuidade. A IA copia a frase do
+  histórico que prova o resultado e o código confere (normalizada, >= 15 caracteres, contida no histórico/fichas/
+  áudios); sem a frase no registro, ignora. Se confirma: vira "Sim", justificativa com prefixo
+  `[Confirmação no registro: "..."]` e CQS refeito por `reclassificar_cqs` se faltar. Entra na `versao_prompt`.
+  Teste de 12/11 (42 casos, `testar.py --verificar`): base 60% (25/42); gpt-4.1-mini 71% e 74% nas 2 rodadas (8
+  viraram Sim, 4 "Sim" indevidos, 1 novo: 1-1559787-0); gpt-4.1 69% (11 viraram Sim, 6 indevidos, 2 novos) e a 2ª
+  rodada ficou inválida (OpenAI sem crédito, erro 429). Ficou o mini. O 723 segue "Não". Vigiar "Sim" indevido novo.
 - **Cliente dispensou o suporte** (regra do gerente, 22/10): registro de que o cliente não precisa ou não quer mais o
   suporte ("cliente informou que não precisa mais de suporte", "desistiu") = pode concluir com **CQS 54**, mesmo que o
   analista tenha analisado/orientado antes (`[cqs] regras`) e mesmo sem o cliente como contato da conclusão:
@@ -126,7 +140,7 @@ Painel Streamlit para os gerentes revisarem as sugestões (a IA aprende com essa
   remoto nunca é visita; 54 também quando o registro NÃO descreve ação do analista no sistema: o cliente resolveu
   depois de um simples retorno/"ainda persiste?", causa externa como internet/rede/energia, ou o analista só
   repassou serial/liberação de versão — 05/11: 663 e 667 passaram a 54, 583 e 661 seguem 55; 721 saiu 54 e o
-  gerente mudou para 55 porque o analista exportou o certificado e validou, vigiar excesso) — sem repetir o catálogo.
+  gerente mudou para 55 porque o analista exportou o certificado e validou, vigiar excesso; 12/11: criar link ou atalho de módulo = 54 (782) e demanda já resolvida quando o analista retornou continua 54 mesmo explicando a causa depois (801), ainda NÃO testado com IA por falta de crédito) — sem repetir o catálogo.
   Cidade do cliente (`Clientes.Cidade/Estado` na query candidatos) vai para a IA só como "Local do cliente: dentro/fora
   de Juiz de Fora" (`[cqs] cidade_local`). Catálogo mudou → só o CQS dos "Sim" pendentes é refeito com prompt curto
   (`reclassificar_cqs`/`refazer_so_cqs`, análise mantida). Exemplos de CQS valem enquanto os códigos existirem

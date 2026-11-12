@@ -40,6 +40,11 @@ concluir_so_atualizacao = sim
 ; 2ª revisão (checagem extra de cada "Sim"): desligada em 16/10/2026. Em produção mudou 1 decisão em ~256,
 ; nos testes errou 12 das 17 vezes que mudou e custava ~40% dos tokens (gpt-4.1). Para comparar: testar.py --com-revisao
 segunda_revisao = nao
+; verificação do "Não" só por falta de confirmação (12/11/2026): 2ª chamada curta; a IA cita a frase do histórico
+; que prova o resultado e o código confere que ela existe. Em teste: ligar só depois do testar.py --verificar.
+verificar_confirmacao = sim
+; modelo só da verificação (vazio = o mesmo da análise)
+modelo_verificacao =
 ; modelo só da 2ª revisão (vazio = o mesmo). Um modelo mais forte aqui custa pouco e ajuda muito.
 modelo_revisao =
 ; a 2ª revisão só devolve com certeza >= este valor (0 a 1). Devolvendo demais? suba para 0.85
@@ -164,6 +169,8 @@ regras =
       o analista só retornou o contato ou perguntou se o problema persistia ("ainda persiste?"), a causa foi externa
       (internet, rede, energia, equipamento do cliente) e ele voltou a usar sozinho, ou o analista só repassou um
       serial/liberação de versão a outra pessoa. Nesses casos não escreva "após o suporte" no resumo.
+      Criar link ou atalho de módulo ou sistema na área de trabalho também é 54. Se o cliente já tinha resolvido
+      a demanda quando o analista retornou, explicar depois a provável causa não tira o 54.
     - CQS 65: atualização remota do sistema, completa ou parcial. Como CQS PRINCIPAL, só quando o atendimento foi
       apenas a atualização; se houve suporte (erro, dúvida, análise) e a atualização fez parte da solução, o
       principal é o do suporte (no mínimo 55) e a atualização fica só no CQS secundário do registro.
