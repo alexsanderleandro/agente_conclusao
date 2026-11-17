@@ -71,6 +71,13 @@ Painel Streamlit para os gerentes revisarem as sugestões (a IA aprende com essa
   e 466 davam Não); 464 e 470 têm o mesmo registro e tinham sido devolvidos (rótulo antigo, antes da regra).
 - **Pedido de revisão (26)**: o prompt manda ler o texto dela como RESUMO DA CONCLUSÃO (o que foi feito e o resultado);
   antes mandava ignorá-la ("avalie o que veio antes"), o que causou 5 dos 6 erros de 19/10.
+- **Registro sem os passos** (16/11, pedido do gerente; `criterio_registro` no ini e `CRITERIO_REGISTRO`): "passei os
+  passos ao cliente"/"o cliente fez o que indiquei e funcionou"/"conforme orientado" sem dizer QUAIS passos = "Não" com
+  pendência "Registro: não informa quais passos...", mesmo com o cliente confirmando. Vale se o detalhe está em outra
+  interação, no resumo da 26 ou em print/áudio. `historico.so_confirmacao` devolve False para pendência "Registro:",
+  então a verificação da confirmação não anula essa trava. Teste de 16/11 (painel, 90 casos, gpt-4.1-mini, sem x com a regra): 78% e 78%; a pendência "Registro:" saiu em só 1 caso
+  (1-1579149-0); o resto da diferença é ruído (7 casos mudaram nos dois sentidos). A regra no prompt sozinha quase não pega;
+  nos "Sim" desde 20/10 com "passos/conforme orientado" no resumo, os 7 foram aceitos pelo gerente (cuidado com falso "Não").
 - **Confirmação** (`_CONF_VALE`): vale (a) o OK do cliente em texto/áudio/print; (b) o analista registrar que o CLIENTE
   obteve o resultado, fez/testou/conseguiu ("o cliente realizou um teste e o sistema iniciou normalmente", "seguindo
   essa sequência a nota fechou"), ou resultado conferido no sistema dele ("nota transmitida com sucesso"); (c) o cliente

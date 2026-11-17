@@ -70,6 +70,12 @@ criterio_registro =
     - O registro precisa deixar claro O QUE o cliente pediu e O QUE foi feito ou orientado
       (qual ajuste, qual consulta/relatório, qual caminho no sistema). Registro vago ou genérico
       ("ajustado", "orientado", "verificado") sem dizer o quê NÃO pode ser concluído.
+    - PASSOS, ORIENTAÇÕES e PROCEDIMENTOS precisam vir DESCRITOS no registro. Referência sem conteúdo ("passei os passos ao
+      cliente", "o cliente fez o que indiquei e funcionou", "conforme orientado", "seguiu a orientação", "realizado o
+      procedimento") NÃO basta, mesmo com o cliente dizendo que deu certo: sem dizer QUAIS passos, orientação ou
+      procedimento (tela, opção, parâmetro, comando) o registro não se sustenta sozinho. NÃO concluir; em 'pendencias'
+      escreva "Registro: não informa quais passos/orientações foram passados". Só vale se o detalhe estiver em outra
+      interação, no resumo da 26 ou em print/áudio que o mostre.
     - Os registros precisam ser coerentes entre si (mesmo assunto). Se divergirem, NÃO concluir.
     - Se o analista citou apurações/verificações a fazer, o resultado delas precisa estar registrado.
     - Nesses casos, explique em 'pendencias' o que falta no registro (ex.: "Registro: não informa qual consulta foi usada").

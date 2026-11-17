@@ -254,6 +254,8 @@ def so_confirmacao(pendencias):
     """True se todas as pendências listadas pela IA forem sobre confirmação do cliente."""
     partes = [p.strip() for p in re.split(r"[|;]\s*|\n", str(pendencias or "")) if p.strip()]
     partes = [re.sub(r"^(Texto|Revisão|Imagem|Áudio|Ficha)\s*:\s*", "", p, flags=re.I) for p in partes]
+    if any(re.match(r"(?i)registro\s*:", p) for p in partes):   # registro vago não é só falta de confirmação
+        return False
     return bool(partes) and all(_CONF.search(p) for p in partes)
 
 
