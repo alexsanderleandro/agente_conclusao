@@ -17,6 +17,7 @@ COERÊNCIA
 RDM / CORREÇÃO NO SISTEMA
 8. Falha ou erro de rotina do sistema identificado = precisa de RDM aberta e com o número informado no atendimento.
 9. Solução de contorno/paliativa = precisa de RDM para a correção definitiva; sem ela, devolver.
+8b. LIMITE DO SISTEMA NÃO VALIDADO: se o registro diz que o sistema permite/aceita até N (e-mails, itens, caracteres...) e o cliente tinha informado/configurado MAIS que isso (ex.: "o CSMensageiro permite até dois e-mails, mas estavam configurados três"), o sistema deixou o usuário errar sem bloquear = falha do sistema. NÃO concluir, mesmo que o analista tenha ajustado a configuração e o cliente confirme que funcionou: pendência "RDM: abrir RDM para o sistema validar/bloquear" (a não ser que o registro cite a RDM aberta). Caso 906, gerente, 19/11.
 9b. Processo resolvido com alteração manual (ajuste direto no banco, correção manual de dados, passo manual fora do sistema) porque o sistema não faz = abrir RDM pedindo que o sistema passe a fazer.
 10. Atendimento com RDM vinculada só pode ser concluído quando TODAS as RDMs vinculadas estiverem concluídas ou canceladas (seção RDMs VINCULADAS). RDM cancelada não impede; qualquer outra situação = não concluir (manter em monitoramento).
 

@@ -1,0 +1,25 @@
+# Regras de revisão (versão enxuta, aprovada em 16/10/2026 por alex). Linhas com # são ignoradas.
+# Base: as 12 regras originais (234 devoluções reais) + o que as 28 "NOVAS" de 13/10 traziam de diferente.
+# A confirmação do cliente já é regra fixa do agente ([agente] exigir_confirmacao = sim).
+# Situações que o gerente aceita concluir vão numa seção QUANDO PODE CONCLUIR (no fim).
+
+DOCUMENTAÇÃO
+1. O registro deve dizer O QUE o cliente pediu (dúvida ou erro) e O QUE foi feito ou orientado, de forma específica: qual ajuste, tela/rotina, relatório, consulta, configuração ou arquivos trocados (com os nomes). "Ajustado", "orientado", "verificado" sem dizer o quê = devolver ("Detalhar o que foi feito"). Em infraestrutura/servidor, registrar as configurações verificadas e o que foi tratado com a TI do cliente.
+2. Se o registro cita uma evidência (áudio, print, vídeo, relatório do CSInfo), ela precisa estar no atendimento. Citou e não anexou = devolver. Migração ou análise do ambiente do cliente: anexar o relatório do CSInfo.
+3. O que foi feito pelo programador/desenvolvimento precisa estar documentado no próprio atendimento.
+4. Dúvida sobre relatório: registrar qual relatório foi usado e mostrar ao cliente como defini-lo como favorito.
+
+COERÊNCIA
+5. Todas as interações devem ser do mesmo assunto. Interação de outro atendimento ou dois assuntos distintos = devolver (separar em atendimentos).
+6. A conclusão precisa bater com o histórico: não pode ser texto copiado de outro atendimento nem contradizer as interações.
+7. Dúvida ou demanda do cliente não compreendida/esclarecida no registro = devolver.
+
+RDM / CORREÇÃO NO SISTEMA
+8. Falha ou erro de rotina do sistema identificado = precisa de RDM aberta e com o número informado no atendimento.
+9. Solução de contorno/paliativa = precisa de RDM para a correção definitiva; sem ela, devolver.
+9b. Processo resolvido com alteração manual (ajuste direto no banco, correção manual de dados, passo manual fora do sistema) porque o sistema não faz = abrir RDM pedindo que o sistema passe a fazer.
+10. Atendimento com RDM vinculada só pode ser concluído quando TODAS as RDMs vinculadas estiverem concluídas ou canceladas (seção RDMs VINCULADAS). RDM cancelada não impede; qualquer outra situação = não concluir (manter em monitoramento).
+
+ATUALIZAÇÃO / MONITORAMENTO
+11. Se a solução depende de atualização de versão do cliente: informar o número do atendimento que vai monitorar a atualização, ou manter este em monitoramento.
+12. Atendimento em monitoramento (lentidão, infraestrutura, integração/API, correção em teste) ou de controle interno (ex.: controle de atualização com cliente ativo) = não concluir enquanto estiver ativo; informar a data do próximo contato.

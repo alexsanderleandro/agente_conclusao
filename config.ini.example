@@ -64,6 +64,9 @@ criterio_conclusao =
       registrado pelo analista), ou o cliente conseguiu executar o que foi orientado.
     - Não há pendência aberta (cliente aguardando algo, analista prometeu retorno, etc.).
     - Se o cliente fez nova pergunta/problema depois da última resposta, NÃO concluir.
+    - Se o registro mostra que o SISTEMA deixou o usuário informar/configurar além do que suporta (ex.: "permite até dois e-mails, mas
+      estavam configurados três"), é falha do sistema: NÃO concluir só porque o analista ajustou a configuração e o cliente confirmou;
+      exige RDM aberta (pendência "RDM: ..."). Regra do gerente, caso 906.
 
 ; qualidade do registro: o revisor devolve quando o registro não diz o que foi feito (edite à vontade)
 criterio_registro =
