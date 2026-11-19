@@ -240,7 +240,7 @@ _CAP = r"[A-ZÁÀÂÃÉÊÍÓÔÕÚÜÇ][\w']*(?:\.[^\W\d_][\w']*)*"
 _NOME = rf"{_NAO_NOME}[^\W\d_][\w']*(?:\.[^\W\d_][\w']*)*(?:[ \t]+{_NAO_NOME}{_CAP}){{0,2}}"
 _NOME_CAP = rf"{_NAO_NOME}{_CAP}(?:[ \t]+{_NAO_NOME}{_CAP}){{0,2}}"
 _RX_ATUAL_ANALISTA = re.compile(rf"(?i:\b(?:pel[oa]\s+)?analista)\s*:?\s*"
-                                rf"(?P<nomes>{_NOME}(?:\s*(?:/|,|&|\be\b)\s*{_NOME_CAP})*)")
+                                rf"(?P<nomes>{_NOME}(?:\s*(?:/|,|&|\be\b|-|–)\s*{_NOME_CAP})*)")
 # o que costuma acompanhar os 4 dados sem ser "texto a mais"
 _RX_ATUAL_ACOMPANHA = re.compile(
     r"(?i)\bticket\b\s*:?\s*(?:n[º°o]\.?\s*)?\d+|\bcontrole\s+de\s+atualiza[cç][aã]o\b"
@@ -277,6 +277,12 @@ def registros_atualizacao(txt):
     return achados
 
 
+def nomes_analistas(txt):
+    """Nomes de um registro com mais de um analista ("Alexandre - Heberty", "A / B", "A, B", "A e B")."""
+    nomes = [n.strip(" .") for n in re.split(r"\s*(?:/|,|&|\be\b|-|–)\s*", str(txt or "")) if n.strip(" .")]
+    return nomes or [str(txt or "").strip()]
+
+
 def extrair_atualizacoes(rows):
     """Registros de atualização nas iterações (cada um gera um CQS secundário para o analista do registro).
     Retorna [{id, tipo, data, analista, modalidade}]. O mesmo registro repetido (o pedido de revisão costuma
@@ -284,10 +290,13 @@ def extrair_atualizacoes(rows):
     achados, vistos = [], set()
     for r in rows:
         for item in registros_atualizacao(limpar(r.get("texto"))):
-            chave = (item["tipo"], item["data"], _norm(item["analista"]), item["modalidade"])
-            if chave not in vistos:
-                vistos.add(chave)
-                achados.append({"id": f"U{len(achados) + 1}", **item})
+            # registro com 2+ analistas ("Analista: Alexandre - Heberty"): cada um recebe o seu CQS secundário
+            for nome in nomes_analistas(item["analista"]):
+                chave = (item["tipo"], item["data"], _norm(nome), item["modalidade"])
+                if chave not in vistos:
+                    vistos.add(chave)
+                    achados.append({"id": f"U{len(achados) + 1}", **item, "analista": nome,
+                                    "analistas_registro": item["analista"]})
     return achados
 
 
@@ -344,7 +353,7 @@ def resumo_atualizacao(u):
     txt = "Registro de atualização" + (f" {u['tipo'].lower()}" if u.get("tipo") else "") + " do sistema"
     txt += (f", realizada em {u['data']}" if u.get("data") else "") + \
            (f" ({u['modalidade']})" if u.get("modalidade") else "") + \
-           (f" pelo analista {u['analista']}" if u.get("analista") else "")
+           (f" pelo analista {u.get('analistas_registro') or u['analista']}" if u.get("analista") else "")
     return txt + ". Atendimento aberto apenas para documentar a atualização."
 
 
@@ -1391,7 +1400,8 @@ def decidir(client, cfg, conn, at, inter, historico, catalogo, por_cod, exemplos
         _cod = cqs_so_atualizacao(cfg, _u.get("modalidade"), local_cliente(cfg, at))
         res = {"pode_concluir": True, "confianca": 0.95, "justificativa": "", "pendencias": "",
                "resumo": resumo_atualizacao(_u), "cqs": _cod,
-               "cqs_atualizacoes": [{"id": _u.get("id", "U1"), "cqs": _cod}] if _cod else []}
+               "cqs_atualizacoes": [{"id": (x or _u).get("id", "U1"), "cqs": _cod}
+                                    for x in (atualizacoes or [_u])] if _cod else []}
     else:
         citados_txt = texto_citados(conn, cfg, at, inter) if continuidade_on else ""
         res, i, o = avaliar(client, cfg, at, historico, catalogo, exemplos, prot, fichas_txt, audios_txt, atualizacoes,
@@ -1414,7 +1424,7 @@ def decidir(client, cfg, conn, at, inter, historico, catalogo, por_cod, exemplos
             res["justificativa"] = (
                 "[Só registro de atualização] Atendimento aberto apenas para documentar a atualização: pela "
                 "regra pode ser concluído, e o CQS da atualização vai para o analista do registro"
-                + (f" ({_u['analista']})" if _u.get("analista") else "") + "."
+                + (f" ({_u.get('analistas_registro') or _u['analista']})" if _u.get("analista") else "") + "."
                 + (f" Observação da IA: {' | '.join(_obs)}" if _obs else ""))
             res["pode_concluir"], res["pendencias"] = True, ""
             try:   # observação da IA (ex.: ficha de visita) baixa a confiança para chamar a atenção no painel
@@ -1568,9 +1578,10 @@ def escolher_cqs(cfg, res, por_cod, pode, exclusivo=None, atualizacoes=(), aid="
     # CQS secundários: o analista vem da extração local (nome real), o código vem da IA.
     # Só registro de atualização: o CQS dela já é o principal, sem secundário repetido
     secundarios = []
-    if pode and atualizacoes and not exclusivo:
+    _para_sec = list(atualizacoes[1:] if exclusivo else atualizacoes)
+    if pode and _para_sec:
         escolhas = {str(x.get("id")): x.get("cqs") for x in (res.get("cqs_atualizacoes") or []) if isinstance(x, dict)}
-        for u in atualizacoes:
+        for u in _para_sec:
             c2 = por_cod.get(str(escolhas.get(u["id"])))
             if c2 and _sec is not None and str(c2["codtiporegistro"]) not in _sec:
                 c2 = None   # fora dos permitidos como secundário

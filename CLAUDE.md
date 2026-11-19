@@ -125,6 +125,10 @@ Painel Streamlit para os gerentes revisarem as sugestões (a IA aprende com essa
   conclui se TODAS estiverem em `[rdm] finalizadas` (3 = concluída, 4 = cancelada). Outra situação = "Não" forçado
   no código + pendência "RDM: ...". RDM citada no texto e vinculada a outro atendimento não conta.
   A situação vai para a IA (seção "RDMs VINCULADAS") e fica em `avaliacoes.rdms`; mudou → reavalia.
+- **Limite do sistema não validado** (19/11, gerente, caso 906: CSMensageiro aceita até 2 e-mails e o cliente tinha 3; o analista só
+  ajustou a configuração): sistema que deixa o usuário informar além do que suporta = falha do sistema, só conclui com RDM
+  aberta. Regra 8b em `regras_aprovadas.txt` + item no `criterio_conclusao`. O gpt-4.1-mini continua dizendo "Sim" no 906
+  (3 redações); o gpt-4.1 devolve. Painel (90 casos) 78% → 80%, dentro do ruído. Limite do modelo, não da regra.
 - **Registro de atualização** (definição da empresa): texto com os 4 dados obrigatórios, em qualquer ordem/formato:
   atualização (completa ou parcial), data, analista que fez e tipo (remota ou presencial). Ex.: "Ticket N -
   Atualização: Completa - Data: dd/mm/aaaa - Analista: X [/ Y] - Remoto" ou "Atualização Completa - Remota - Data ..
@@ -138,7 +142,10 @@ Painel Streamlit para os gerentes revisarem as sugestões (a IA aprende com essa
   secundário repetido) e precisa bater com a modalidade (`cqs_combina_modalidade`). `avaliacoes.so_atualizacao`
   1 = puro, 2 = extra, 0 = não (NULL = antes da regra → "Não" pendente é refeito uma vez). Histórico: 44 puro + 5 extra.
 - **CQS**: principal só quando "Sim"; secundário por registro de atualização (analista do registro; repetido no texto
-  do pedido de revisão conta uma vez). Listas em `[cqs] principal/secundario` (63 excluído do catálogo em 16/10;
+  do pedido de revisão conta uma vez). Registro com 2+ analistas ("Analista: Alexandre - Heberty", "A / B", "A e B"; 19/11, reprovação do gerente):
+  CADA analista recebe o seu CQS secundário (`nomes_analistas`, um item U por nome em `extrair_atualizacoes`; o hífen
+  também separa nomes). Só registro de atualização: o 1º é o principal e os demais viram secundários. Avaliações já
+  gravadas com um secundário só não são refeitas sozinhas. Listas em `[cqs] principal/secundario` (63 excluído do catálogo em 16/10;
   59 = Visita fora de JF, 60 = Visita dentro de JF, 65 = Atualização remota completa ou parcial). `[cqs] regras` só
   com o que é da empresa (54 só sem auxílio ou cliente que já resolveu sozinho, ex. "ao retornar a ligação, informou
   que já resolveu" (526), e conseguir DEPOIS da orientação não é resolver sozinho (546); analisou/orientou/mostrou/
